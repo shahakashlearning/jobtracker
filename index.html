@@ -504,63 +504,119 @@ code{background:var(--surface3);border:1px solid var(--border);padding:2px 7px;b
 <!-- SETTINGS -->
 <div class="page" id="page-settings">
 
-  <!-- FIREBASE SETUP -->
+  <!-- CONNECTION STATUS PANEL -->
+  <div class="card card-gold" id="connStatusCard">
+    <div class="card-header"><div class="card-title"><span class="card-title-icon">🔌</span>Connection Status</div></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;" id="connStatusGrid">
+      <div style="background:var(--surface2);border-radius:10px;padding:16px;border:1px solid var(--border)">
+        <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">🔥 Firebase Cloud DB</div>
+        <div id="fbStatusDetail" style="font-size:13px;color:var(--text3)">Not connected — data stays on this device only</div>
+      </div>
+      <div style="background:var(--surface2);border-radius:10px;padding:16px;border:1px solid var(--border)">
+        <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">📧 Gmail</div>
+        <div id="gmailStatusDetail" style="font-size:13px;color:var(--text3)">Not connected — cannot send emails</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FIREBASE — CONFIG FILE IMPORT -->
   <div class="card card-gold">
-    <div class="card-header"><div class="card-title"><span class="card-title-icon">🔥</span>Firebase Cloud Database Setup</div></div>
-    <div class="alert alert-info">Firebase gives you a free, permanent cloud database — your job data syncs across all devices automatically. Free forever for personal use (50,000 reads/day).</div>
-    <div class="setup-step">
-      <div class="setup-num">1</div>
-      <div class="setup-body">
-        <div class="setup-title">Go to Firebase Console</div>
-        <div class="setup-desc">Open <a href="https://console.firebase.google.com" target="_blank" style="color:var(--gold)">console.firebase.google.com</a> → Sign in with your Gmail → Click <strong>Add project</strong> → Name it <em>JobTracker</em> → Disable Google Analytics → Create project</div>
+    <div class="card-header"><div class="card-title"><span class="card-title-icon">🔥</span>Step 1 — Connect Firebase Cloud Database</div></div>
+    <div class="alert alert-warn" style="font-size:13px">
+      ⚠️ <strong>Why your data isn't syncing:</strong> Firebase is not connected yet. Data saved in Edge stays in Edge only. Once you connect Firebase below, ALL devices will share the same data automatically.
+    </div>
+    <div class="alert alert-info" style="font-size:12px;margin-bottom:16px">
+      Firebase free tier = 50,000 reads + 20,000 writes per day. Free forever. No credit card needed.
+    </div>
+
+    <!-- HOW TO GET CONFIG FILE -->
+    <div style="background:var(--surface2);border-radius:10px;padding:16px;margin-bottom:18px;border:1px solid var(--border)">
+      <div style="font-weight:600;font-size:14px;margin-bottom:12px;color:var(--gold2)">📋 How to get your Firebase config file (one-time setup)</div>
+      <div class="setup-step">
+        <div class="setup-num">1</div>
+        <div class="setup-body">
+          <div class="setup-title">Create Firebase project</div>
+          <div class="setup-desc">Go to <a href="https://console.firebase.google.com" target="_blank" style="color:var(--gold)">console.firebase.google.com</a> → Click <strong>Add project</strong> → Name: <em>JobTracker</em> → Disable Analytics → Click <strong>Create project</strong></div>
+        </div>
+      </div>
+      <div class="setup-step">
+        <div class="setup-num">2</div>
+        <div class="setup-body">
+          <div class="setup-title">Create Firestore Database</div>
+          <div class="setup-desc">Left sidebar → <strong>Build</strong> → <strong>Firestore Database</strong> → <strong>Create database</strong> → Select <strong>"Start in test mode"</strong> → Choose <strong>asia-south1 (Mumbai)</strong> → <strong>Enable</strong></div>
+        </div>
+      </div>
+      <div class="setup-step">
+        <div class="setup-num">3</div>
+        <div class="setup-body">
+          <div class="setup-title">Register a Web App & download config</div>
+          <div class="setup-desc">
+            Left sidebar → Click ⚙️ <strong>Project Settings</strong> (gear icon) → Scroll down to <strong>"Your apps"</strong> → Click <strong>&lt;/&gt; Web</strong> icon → App nickname: <em>JobTracker</em> → Click <strong>Register app</strong><br><br>
+            You will see a <code>firebaseConfig</code> object. Below it, click <strong>"Continue to console"</strong>.<br><br>
+            Now: Click the <strong>three dots ⋮</strong> next to your app → <strong>Download google-services.json</strong> — OR simply copy the config values shown on screen.
+          </div>
+        </div>
+      </div>
+      <div class="setup-step">
+        <div class="setup-num">4</div>
+        <div class="setup-body">
+          <div class="setup-title">Create a simple config file on your computer</div>
+          <div class="setup-desc">
+            Open Notepad → paste the template below with your values → Save as <strong>jobtracker-config.json</strong><br>
+            <div style="background:var(--surface3);border-radius:6px;padding:10px;margin-top:8px;font-family:monospace;font-size:11px;color:var(--gold3);line-height:1.8">
+{<br>
+&nbsp;&nbsp;"apiKey": "AIzaSy...",<br>
+&nbsp;&nbsp;"authDomain": "jobtracker-xxx.firebaseapp.com",<br>
+&nbsp;&nbsp;"projectId": "jobtracker-xxx",<br>
+&nbsp;&nbsp;"storageBucket": "jobtracker-xxx.appspot.com",<br>
+&nbsp;&nbsp;"messagingSenderId": "123456789",<br>
+&nbsp;&nbsp;"appId": "1:xxx:web:xxx",<br>
+&nbsp;&nbsp;"gmailClientId": "xxxxxxxx.apps.googleusercontent.com"<br>
+}
+            </div>
+            <div style="margin-top:8px;font-size:12px;color:var(--text2)">The <code>gmailClientId</code> field is optional — if included, Gmail is also auto-configured when you import this file.</div>
+          </div>
+        </div>
       </div>
     </div>
-    <div class="setup-step">
-      <div class="setup-num">2</div>
-      <div class="setup-body">
-        <div class="setup-title">Create Firestore Database</div>
-        <div class="setup-desc">Left sidebar → <strong>Build → Firestore Database</strong> → Create database → Select <strong>Start in test mode</strong> → Choose location nearest to you (e.g. asia-south1 for India) → Enable</div>
+
+    <!-- IMPORT BUTTON — THE MAIN ACTION -->
+    <div style="background:linear-gradient(135deg,rgba(201,168,76,0.08),rgba(201,168,76,0.03));border:1.5px solid rgba(201,168,76,0.3);border-radius:12px;padding:20px;text-align:center;margin-bottom:16px;">
+      <div style="font-size:15px;font-weight:600;color:var(--gold2);margin-bottom:6px">📂 Import your config file</div>
+      <div style="font-size:12px;color:var(--text3);margin-bottom:14px">Select your <strong>jobtracker-config.json</strong> file — all fields fill automatically</div>
+      <button class="btn btn-primary" onclick="document.getElementById('configFileInput').click()" style="font-size:14px;padding:10px 24px;">
+        📂 Choose Config File (.json)
+      </button>
+      <input type="file" id="configFileInput" accept=".json" style="display:none" onchange="importConfigFile(event)">
+    </div>
+
+    <!-- MANUAL ENTRY FALLBACK -->
+    <details style="margin-bottom:14px;">
+      <summary style="cursor:pointer;font-size:13px;color:var(--text3);padding:8px 0;user-select:none">▶ Or enter details manually (advanced)</summary>
+      <div style="padding-top:12px;">
+        <div class="form-row">
+          <div class="form-group"><label>API Key</label><input type="text" id="fbApiKey" placeholder="AIzaSy..."></div>
+          <div class="form-group"><label>Auth Domain</label><input type="text" id="fbAuthDomain" placeholder="jobtracker-xxx.firebaseapp.com"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Project ID</label><input type="text" id="fbProjectId" placeholder="jobtracker-xxx"></div>
+          <div class="form-group"><label>App ID</label><input type="text" id="fbAppId" placeholder="1:xxx:web:xxx"></div>
+        </div>
       </div>
-    </div>
-    <div class="setup-step">
-      <div class="setup-num">3</div>
-      <div class="setup-body">
-        <div class="setup-title">Get your Firebase config</div>
-        <div class="setup-desc">Left sidebar → Project settings (gear icon) → Scroll to "Your apps" → Click <strong>Web app (&lt;/&gt;)</strong> → Register app → Copy the <code>firebaseConfig</code> object → paste the values below</div>
-      </div>
-    </div>
-    <div class="form-row">
-      <div class="form-group"><label>API Key</label><input type="text" id="fbApiKey" placeholder="AIzaSy..."></div>
-      <div class="form-group"><label>Auth Domain</label><input type="text" id="fbAuthDomain" placeholder="jobtracker-xxx.firebaseapp.com"></div>
-    </div>
-    <div class="form-row">
-      <div class="form-group"><label>Project ID</label><input type="text" id="fbProjectId" placeholder="jobtracker-xxx"></div>
-      <div class="form-group"><label>App ID</label><input type="text" id="fbAppId" placeholder="1:xxx:web:xxx"></div>
-    </div>
+    </details>
+
     <div style="display:flex;gap:10px;flex-wrap:wrap;">
-      <button class="btn btn-primary" onclick="saveFirebaseConfig()">💾 Save & Connect Firebase</button>
+      <button class="btn btn-primary" onclick="saveFirebaseConfig()" id="fbConnectBtn">🔥 Connect Firebase</button>
+      <button class="btn btn-success" onclick="syncFromCloud()" id="fbSyncBtn">🔄 Sync Now</button>
       <button class="btn btn-danger btn-sm" onclick="disconnectFirebase()">✕ Disconnect</button>
     </div>
     <div id="fbMsg" style="margin-top:12px;"></div>
   </div>
 
-  <!-- GMAIL SETUP -->
+  <!-- GMAIL -->
   <div class="card card-gold">
-    <div class="card-header"><div class="card-title"><span class="card-title-icon">📧</span>Gmail API Setup</div></div>
-    <div class="setup-step">
-      <div class="setup-num">1</div>
-      <div class="setup-body">
-        <div class="setup-title">Google Cloud Console</div>
-        <div class="setup-desc"><a href="https://console.cloud.google.com" target="_blank" style="color:var(--gold)">console.cloud.google.com</a> → Create project → Enable Gmail API → Create OAuth Client ID (Web app) → Add <code>https://shahakashlearning.github.io</code> as Authorized Origin</div>
-      </div>
-    </div>
-    <div class="setup-step">
-      <div class="setup-num">2</div>
-      <div class="setup-body">
-        <div class="setup-title">OAuth Consent Screen → Audience → Add test users</div>
-        <div class="setup-desc">Add both your Gmail accounts as test users so both can connect</div>
-      </div>
-    </div>
+    <div class="card-header"><div class="card-title"><span class="card-title-icon">📧</span>Step 2 — Connect Gmail</div></div>
+    <div class="alert alert-info" style="font-size:12px">If you included <code>gmailClientId</code> in your config file above, this is already filled in. Just click Connect Gmail.</div>
     <div class="form-group"><label>OAuth Client ID</label><input type="text" id="clientIdInput" placeholder="xxxxxxxx.apps.googleusercontent.com"></div>
     <div style="display:flex;gap:10px;flex-wrap:wrap;">
       <button class="btn btn-primary" onclick="saveClientId()">💾 Save Client ID</button>
@@ -573,10 +629,11 @@ code{background:var(--surface3);border:1px solid var(--border);padding:2px 7px;b
   <!-- DATA MANAGEMENT -->
   <div class="card">
     <div class="card-header"><div class="card-title"><span class="card-title-icon">💾</span>Data Management</div></div>
-    <div class="alert alert-info" style="font-size:12px">Export your data as a backup. Import to restore or transfer to another device.</div>
+    <div class="alert alert-info" style="font-size:12px">Export your data as a backup anytime. Import to restore on a new device.</div>
     <div style="display:flex;gap:10px;flex-wrap:wrap;">
       <button class="btn btn-secondary" onclick="exportData()">⬇️ Export Backup (JSON)</button>
       <button class="btn btn-secondary" onclick="document.getElementById('importInput').click()">⬆️ Import Backup</button>
+      <button class="btn btn-secondary" onclick="exportConfigTemplate()">📋 Download Config Template</button>
       <button class="btn btn-danger" onclick="clearAll()">🗑️ Clear All Local Data</button>
     </div>
     <input type="file" id="importInput" accept=".json" style="display:none" onchange="importData(event)">
@@ -1569,14 +1626,71 @@ function saveClientId(){
 function disconnectGmail(){gmailToken=null;updateGmailStatus(false);showMsg('gmailMsg','Disconnected','info');}
 
 function updateGmailStatus(on){
-  const p=document.getElementById('gmailPill');const t=document.getElementById('gmailText');
-  p.className='gmail-pill '+(on?'on':'off');t.textContent=on?'Gmail Connected':'Connect Gmail';
-  const w=document.getElementById('gmailWarn');if(w)w.style.display=on?'none':'flex';
+  const p=document.getElementById("gmailPill");const t=document.getElementById("gmailText");
+  p.className="gmail-pill "+(on?"on":"off");t.textContent=on?"Gmail Connected":"Connect Gmail";
+  const w=document.getElementById("gmailWarn");if(w)w.style.display=on?"none":"flex";
+  const sd=document.getElementById("gmailStatusDetail");
+  if(sd)sd.innerHTML=on
+    ?`<span style="color:var(--green)">✅ Connected — emails sent from your Gmail</span>`
+    :`<span style="color:var(--text3)">Not connected — cannot send emails</span>`;
 }
 
 // ============================================================
-// FIREBASE SETTINGS
+// FIREBASE SETTINGS + CONFIG FILE IMPORT
 // ============================================================
+function importConfigFile(event){
+  const file=event.target.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const cfg=JSON.parse(e.target.result);
+      // Fill Firebase fields
+      if(cfg.apiKey) document.getElementById('fbApiKey').value=cfg.apiKey;
+      if(cfg.authDomain) document.getElementById('fbAuthDomain').value=cfg.authDomain;
+      if(cfg.projectId) document.getElementById('fbProjectId').value=cfg.projectId;
+      if(cfg.appId) document.getElementById('fbAppId').value=cfg.appId;
+      // Fill Gmail if present
+      if(cfg.gmailClientId){
+        document.getElementById('clientIdInput').value=cfg.gmailClientId;
+        clientId=cfg.gmailClientId;
+        localStorage.setItem('jt2_clientid',clientId);
+      }
+      const fbCfg={
+        apiKey:cfg.apiKey||'',authDomain:cfg.authDomain||'',
+        projectId:cfg.projectId||'',appId:cfg.appId||'',
+        storageBucket:cfg.storageBucket||'',messagingSenderId:cfg.messagingSenderId||''
+      };
+      if(fbCfg.apiKey&&fbCfg.projectId){
+        fbConfig=fbCfg;LS.set('jt2_fbconfig',fbCfg);
+        initFirebase();
+        const gmailNote=cfg.gmailClientId?' Gmail Client ID also saved — click Connect Gmail to finish.':'';
+        showMsg('fbMsg','✅ Config imported! Firebase connecting and syncing...'+gmailNote,'success');
+      } else {
+        showMsg('fbMsg','⚠️ Config file missing apiKey or projectId. Double-check your file.','error');
+      }
+    }catch(err){
+      showMsg('fbMsg','❌ Invalid JSON file. Make sure you saved it as a proper .json file.','error');
+    }
+  };
+  reader.readAsText(file);
+  event.target.value='';
+}
+
+function exportConfigTemplate(){
+  const out={
+    apiKey:fbConfig.apiKey||'AIzaSy_PASTE_YOUR_KEY_HERE',
+    authDomain:fbConfig.authDomain||'your-project.firebaseapp.com',
+    projectId:fbConfig.projectId||'your-project-id',
+    storageBucket:fbConfig.storageBucket||'your-project.appspot.com',
+    messagingSenderId:fbConfig.messagingSenderId||'123456789012',
+    appId:fbConfig.appId||'1:123456789012:web:abc123',
+    gmailClientId:clientId||'your-oauth-clientid.apps.googleusercontent.com'
+  };
+  const blob=new Blob([JSON.stringify(out,null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download='jobtracker-config.json';a.click();
+}
+
 function saveFirebaseConfig(){
   const cfg={
     apiKey:document.getElementById('fbApiKey').value.trim(),
@@ -1587,13 +1701,22 @@ function saveFirebaseConfig(){
   if(!cfg.apiKey||!cfg.projectId){showMsg('fbMsg','Fill in at least API Key and Project ID','error');return;}
   fbConfig=cfg;LS.set('jt2_fbconfig',cfg);
   initFirebase();
-  showMsg('fbMsg','✅ Firebase connected! Data will now sync across all your devices.','success');
+  showMsg('fbMsg','✅ Firebase connected! Syncing data across all devices now...','success');
 }
 
-function disconnectFirebase(){fbConnected=false;db=null;updateFbStatus(false);showMsg('fbMsg','Firebase disconnected','info');}
+function disconnectFirebase(){
+  fbConnected=false;db=null;updateFbStatus(false);
+  showMsg('fbMsg','Firebase disconnected. Data saves locally only.','info');
+}
+
 function updateFbStatus(on){
   const p=document.getElementById('fbPill');const t=document.getElementById('fbText');
-  p.className='firebase-pill '+(on?'on':'off');t.textContent=on?'☁ Cloud Synced':'Connect Cloud DB';
+  p.className='firebase-pill '+(on?'on':'off');
+  t.textContent=on?'☁ Cloud Synced':'Connect Cloud DB';
+  const sd=document.getElementById('fbStatusDetail');
+  if(sd)sd.innerHTML=on
+    ?`<span style="color:var(--green)">✅ Connected to <strong>${fbConfig.projectId}</strong> — syncing across all your devices</span>`
+    :`<span style="color:var(--red)">❌ Not connected — data saved on this browser only</span>`;
 }
 
 function showSetup(type){
