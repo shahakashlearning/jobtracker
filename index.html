@@ -924,173 +924,214 @@ let db=null;
 let fbConnected=false;
 
 // ============================================================
-// FIREBASE — ROBUST INIT + REALTIME SYNC
+// FIREBASE ENGINE — SINGLE SOURCE OF TRUTH
 // ============================================================
-let listenersAttached = false;
-let fbInitialised = false;
+// Use a single frozen object so state can never be partially reset
+const FB = {
+  db: null,
+  connected: false,
+  listenersOn: false,
+  appReady: false,
+  unsubs: [],   // unsubscribe functions for listeners
 
+  get ok(){ return !!(this.db && this.connected); }
+};
+
+// Called once — safe to call multiple times
 function initFirebase(){
-  if(!fbConfig||!fbConfig.apiKey||!fbConfig.projectId){
-    showMsg('fbMsg','No Firebase config found. Import your config file first.','error');
+  const cfg = fbConfig;
+  if(!cfg || !cfg.apiKey || !cfg.projectId){
+    fbShowMsg('No Firebase config saved. Import your jobtracker-config.json file first.', 'error');
     return;
   }
+
   try{
-    if(!fbInitialised){
+    // Step 1: init Firebase app exactly once
+    if(!FB.appReady){
       if(!firebase.apps.length){
-        firebase.initializeApp(fbConfig);
+        firebase.initializeApp(cfg);
       }
-      fbInitialised = true;
+      FB.appReady = true;
     }
-    db = firebase.firestore();
-    // Enable offline persistence so data is cached locally
-    db.enablePersistence({synchronizeTabs:true}).catch(e=>{
-      if(e.code==='failed-precondition'){
-        // Multiple tabs open — persistence only in one
-        console.warn('Persistence failed (multiple tabs):', e.code);
-      } else if(e.code==='unimplemented'){
-        console.warn('Persistence not supported in this browser');
-      }
-    });
-    fbConnected = true;
-    updateFbStatus(true);
-    if(!listenersAttached) attachRealtimeListeners();
-    showMsg('fbMsg','\u2705 Firebase connected! Live sync active across all devices.','success');
-  }catch(e){
-    console.error('Firebase init error:', e);
-    fbConnected = false;
-    updateFbStatus(false);
-    showMsg('fbMsg','\u274c Firebase error: '+e.message,'error');
+
+    // Step 2: get Firestore — NO persistence (persistence causes the async bug)
+    FB.db = firebase.firestore();
+
+    // Step 3: mark connected SYNCHRONOUSLY before any async work
+    FB.connected = true;
+    updateFbPill(true);
+    fbShowMsg('\u2705 Firebase connected! Attaching realtime sync...', 'success');
+
+    // Step 4: attach listeners (they self-heal on reconnect)
+    attachListeners();
+
+  } catch(e){
+    console.error('[FB] initFirebase error:', e);
+    FB.connected = false;
+    updateFbPill(false);
+    fbShowMsg('\u274c Firebase error: ' + e.message, 'error');
   }
 }
 
-// Realtime listeners — every change on any device instantly updates all others
-function attachRealtimeListeners(){
-  if(!db) return;
-  listenersAttached = true;
+function attachListeners(){
+  if(!FB.db) return;
+  if(FB.listenersOn) return;   // already attached — never attach twice
+  FB.listenersOn = true;
 
-  const handlers = {
-    contacts:(d)=>{ contacts=d; LS.set('jt2_contacts',d); renderContacts(); populateDropdowns(); showSyncPing(); },
-    jobs:    (d)=>{ jobs=d;     LS.set('jt2_jobs',d);     renderJobs();    renderDashboard();  showSyncPing(); },
-    templates:(d)=>{ templates=d;LS.set('jt2_templates',d);renderTemplates(); },
-    sent:    (d)=>{ sentLog=d;  LS.set('jt2_sent',d);     renderSentLog(); },
-    goals:   (d)=>{ goals=d;    LS.set('jt2_goals',d);    renderGoals();   renderDashboard();  },
-    journal: (d)=>{ journal=d;  LS.set('jt2_journal',d);  renderJournal(); },
+  // collection → handler mapping
+  const map = {
+    contacts: (d) => { contacts=d; LS.set('jt2_contacts',d); renderContacts(); populateDropdowns(); pingPill(); },
+    jobs:     (d) => { jobs=d;     LS.set('jt2_jobs',d);     renderJobs();     renderDashboard();   pingPill(); },
+    templates:(d) => { templates=d;LS.set('jt2_templates',d);renderTemplates(); },
+    sent:     (d) => { sentLog=d;  LS.set('jt2_sent',d);     renderSentLog();  },
+    goals:    (d) => { goals=d;    LS.set('jt2_goals',d);    renderGoals();    renderDashboard();   },
+    journal:  (d) => { journal=d;  LS.set('jt2_journal',d);  renderJournal();  },
   };
 
-  Object.entries(handlers).forEach(([col, handler])=>{
-    db.collection(col).onSnapshot(
-      {includeMetadataChanges: false},
+  Object.entries(map).forEach(([col, handler]) => {
+    const unsub = FB.db.collection(col).onSnapshot(
       snap => {
-        const data = snap.docs.map(d => ({...d.data(), id:d.id}));
+        const data = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         handler(data);
       },
       err => {
-        console.error('Listener error ['+col+']:', err.code, err.message);
-        if(err.code==='permission-denied'){
-          showMsg('fbMsg','\u26a0\ufe0f Firestore permission denied. Please fix Firestore Rules (see below).','error');
-          fbConnected = false;
-          updateFbStatus(false);
+        console.error('[FB] listener error [' + col + ']:', err.code);
+        if(err.code === 'permission-denied'){
+          fbShowMsg('\u274c Firestore permission denied on "' + col + '". Fix Firestore Rules — see red box below.', 'error');
+          FB.connected = false;
+          updateFbPill(false);
         }
       }
     );
+    FB.unsubs.push(unsub);
   });
 }
 
-function showSyncPing(){
+function disconnectFirebase(){
+  // Detach all listeners cleanly
+  FB.unsubs.forEach(fn => { try{ fn(); } catch(e){} });
+  FB.unsubs = [];
+  FB.listenersOn = false;
+  FB.connected = false;
+  FB.db = null;
+  updateFbPill(false);
+  fbShowMsg('Firebase disconnected.', 'info');
+}
+
+function pingPill(){
   const p = document.getElementById('fbPill');
   if(p){ p.style.boxShadow='0 0 0 5px rgba(52,211,153,0.4)'; setTimeout(()=>p.style.boxShadow='',1000); }
 }
 
-// Save a single document — called after every add/edit
+// ── WRITE: save one document ─────────────────────────────────
 async function saveToCloud(collection, id, data){
-  if(!db||!fbConnected) return;
+  if(!FB.ok){
+    console.warn('[FB] saveToCloud skipped — not connected');
+    return;
+  }
   try{
-    const clean = JSON.parse(JSON.stringify(data)); // strip undefined values
-    await db.collection(collection).doc(String(id)).set(clean);
-  }catch(e){
-    console.error('saveToCloud error ['+collection+'/'+id+']:', e.code, e.message);
-    if(e.code==='permission-denied'){
-      showMsg('fbMsg','\u26a0\ufe0f Save blocked by Firestore rules. See Settings for fix.','error');
+    const clean = JSON.parse(JSON.stringify(data));
+    await FB.db.collection(collection).doc(String(id)).set(clean);
+    console.log('[FB] saved:', collection, id);
+  } catch(e){
+    console.error('[FB] saveToCloud error:', e.code, e.message);
+    if(e.code === 'permission-denied'){
+      fbShowMsg('\u274c Write blocked — fix Firestore Rules. See red box in Settings.', 'error');
     }
   }
 }
 
+// ── DELETE ───────────────────────────────────────────────────
 async function deleteFromCloud(collection, id){
-  if(!db||!fbConnected) return;
-  try{ await db.collection(collection).doc(String(id)).delete(); }
-  catch(e){ console.error('deleteFromCloud error:', e.message); }
+  if(!FB.ok) return;
+  try{ await FB.db.collection(collection).doc(String(id)).delete(); }
+  catch(e){ console.error('[FB] delete error:', e.message); }
 }
 
-// Manual pull — downloads latest cloud data into this browser
+// ── SYNC NOW: manual pull from cloud ─────────────────────────
 async function syncFromCloud(){
-  if(!db||!fbConnected){
-    showMsg('fbMsg','Firebase not connected. Import config file first.','error');
+  if(!FB.ok){
+    fbShowMsg('\u26a0\ufe0f Firebase not connected. Click "Connect Firebase" first.', 'error');
     return;
   }
   const btn = document.getElementById('fbSyncBtn');
-  if(btn){ btn.disabled=true; btn.textContent='\ud83d\udd04 Syncing...'; }
+  if(btn){ btn.disabled=true; btn.textContent='Syncing...'; }
   try{
-    const cols = ['jobs','contacts','templates','sent','goals','journal'];
-    for(const col of cols){
-      const snap = await db.collection(col).get();
-      const data = snap.docs.map(d=>({...d.data(), id:d.id}));
-      if(col==='jobs')     { jobs=data;      LS.set('jt2_jobs',data); }
-      if(col==='contacts') { contacts=data;  LS.set('jt2_contacts',data); }
-      if(col==='templates'){ templates=data; LS.set('jt2_templates',data); }
-      if(col==='sent')     { sentLog=data;   LS.set('jt2_sent',data); }
-      if(col==='goals')    { goals=data;     LS.set('jt2_goals',data); }
-      if(col==='journal')  { journal=data;   LS.set('jt2_journal',data); }
+    const map = { jobs:'jt2_jobs', contacts:'jt2_contacts', templates:'jt2_templates',
+                  sent:'jt2_sent', goals:'jt2_goals', journal:'jt2_journal' };
+    for(const [col, lsKey] of Object.entries(map)){
+      const snap = await FB.db.collection(col).get();
+      const data = snap.docs.map(d => ({ id:d.id, ...d.data() }));
+      LS.set(lsKey, data);
+      if(col==='jobs')     jobs=data;
+      if(col==='contacts'){ contacts=data; }
+      if(col==='templates') templates=data;
+      if(col==='sent')      sentLog=data;
+      if(col==='goals')     goals=data;
+      if(col==='journal')   journal=data;
     }
     renderAll();
-    showMsg('fbMsg','\u2705 Sync complete! All data is up to date.','success');
-  }catch(e){
-    showMsg('fbMsg','Sync failed: '+e.message,'error');
+    fbShowMsg('\u2705 Sync complete — all data is up to date.', 'success');
+  } catch(e){
+    console.error('[FB] syncFromCloud error:', e);
+    fbShowMsg('Sync failed: ' + e.message, 'error');
   }
   if(btn){ btn.disabled=false; btn.textContent='\ud83d\udd04 Sync Now'; }
 }
 
-// One-time migration: push ALL local data from this browser → Firestore
+// ── PUSH: migrate existing local data to cloud (one-time) ─────
 async function pushLocalToCloud(){
-  if(!db||!fbConnected){
-    showMsg('fbMsg','\u26a0\ufe0f Firebase not connected. Import your config file first.','error');
+  if(!FB.ok){
+    fbShowMsg('\u26a0\ufe0f Firebase not connected. Click "Connect Firebase" first.', 'error');
     return;
   }
   const btn = document.getElementById('pushLocalBtn');
   if(btn){ btn.disabled=true; btn.innerHTML='\u23f3 Uploading...'; }
-
-  let total=0, errors=0;
+  let pushed=0, failed=0;
   try{
-    const allData = {jobs, contacts, templates, sent:sentLog, goals, journal};
+    const allData = { jobs, contacts, templates, sent:sentLog, goals, journal };
     for(const [col, items] of Object.entries(allData)){
       if(!Array.isArray(items)) continue;
       for(const item of items){
-        if(!item||!item.id) continue;
+        if(!item || !item.id) continue;
         try{
           const clean = JSON.parse(JSON.stringify(item));
-          await db.collection(col).doc(String(item.id)).set(clean);
-          total++;
-        }catch(e){
-          errors++;
-          console.error('Push error ['+col+'/'+item.id+']:', e.code, e.message);
-          if(e.code==='permission-denied'){
-            showMsg('fbMsg','\u274c Blocked by Firestore rules! See the red box below for fix instructions.','error');
+          await FB.db.collection(col).doc(String(item.id)).set(clean);
+          pushed++;
+        } catch(e){
+          failed++;
+          console.error('[FB] push error ['+col+']:', e.code, e.message);
+          if(e.code === 'permission-denied'){
+            fbShowMsg('\u274c BLOCKED by Firestore rules. Fix the rules first — see red box below. Then try again.', 'error');
             if(btn){ btn.disabled=false; btn.innerHTML='\u2b06\ufe0f Push Local Data to Cloud'; }
             return;
           }
         }
       }
     }
-    if(errors===0){
-      showMsg('fbMsg','\u2705 '+total+' records pushed to cloud! Open any other device — data will appear automatically.','success');
-    } else {
-      showMsg('fbMsg','\u26a0\ufe0f Pushed '+total+' records with '+errors+' errors. Check console.','warn');
-    }
-  }catch(e){
-    showMsg('fbMsg','\u274c Push failed: '+e.message,'error');
+    fbShowMsg('\u2705 Done! ' + pushed + ' records pushed to cloud. Open other devices — data appears automatically.', 'success');
+  } catch(e){
+    fbShowMsg('\u274c Push error: ' + e.message, 'error');
   }
   if(btn){ btn.disabled=false; btn.innerHTML='\u2b06\ufe0f Push Local Data to Cloud'; }
 }
 
+// ── STATUS HELPERS ────────────────────────────────────────────
+function updateFbPill(on){
+  const p = document.getElementById('fbPill');
+  const t = document.getElementById('fbText');
+  if(p) p.className = 'firebase-pill ' + (on ? 'on' : 'off');
+  if(t) t.textContent = on ? '\u2601 Cloud Synced' : 'Connect Cloud DB';
+  const sd = document.getElementById('fbStatusDetail');
+  if(sd) sd.innerHTML = on
+    ? '<span style="color:var(--green)">\u2705 Connected to <strong>' + (fbConfig.projectId||'') + '</strong> \u2014 syncing across all devices</span>'
+    : '<span style="color:var(--red)">\u274c Not connected \u2014 data saved on this browser only</span>';
+}
+
+// Unified message helper for Settings page Firebase messages
+function fbShowMsg(msg, type){
+  showMsg('fbMsg', msg, type);
+}
 // ============================================================
 // INIT
 // ============================================================
@@ -1098,12 +1139,15 @@ function init(){
   loadTheme();
   if(!templates.length) seedTemplates();
   if(clientId) document.getElementById('clientIdInput').value=clientId;
-  if(fbConfig.apiKey){
-    document.getElementById('fbApiKey').value=fbConfig.apiKey||'';
-    document.getElementById('fbAuthDomain').value=fbConfig.authDomain||'';
-    document.getElementById('fbProjectId').value=fbConfig.projectId||'';
-    document.getElementById('fbAppId').value=fbConfig.appId||'';
-    initFirebase();
+  // Auto-connect Firebase if config is saved
+  if(fbConfig && fbConfig.apiKey && fbConfig.projectId){
+    const setVal=(id,v)=>{ const el=document.getElementById(id); if(el&&v) el.value=v; };
+    setVal('fbApiKey', fbConfig.apiKey);
+    setVal('fbAuthDomain', fbConfig.authDomain);
+    setVal('fbProjectId', fbConfig.projectId);
+    setVal('fbAppId', fbConfig.appId);
+    // Delay to ensure Firebase SDK is loaded
+    setTimeout(initFirebase, 500);
   }
   loadProfile();
   renderAll();
@@ -1889,10 +1933,18 @@ function importConfigFile(event){
         storageBucket:cfg.storageBucket||'',messagingSenderId:cfg.messagingSenderId||''
       };
       if(fbCfg.apiKey&&fbCfg.projectId){
-        fbConfig=fbCfg;LS.set('jt2_fbconfig',fbCfg);
-        initFirebase();
-        const gmailNote=cfg.gmailClientId?' Gmail Client ID also saved — click Connect Gmail to finish.':'';
-        showMsg('fbMsg','✅ Config imported! Firebase connecting and syncing...'+gmailNote,'success');
+        fbConfig=fbCfg;
+        LS.set('jt2_fbconfig',fbCfg);
+        // Fill UI fields
+        const setVal=(id,v)=>{ const el=document.getElementById(id); if(el&&v) el.value=v; };
+        setVal('fbApiKey', fbCfg.apiKey);
+        setVal('fbAuthDomain', fbCfg.authDomain);
+        setVal('fbProjectId', fbCfg.projectId);
+        setVal('fbAppId', fbCfg.appId);
+        const gmailNote=cfg.gmailClientId?' Gmail Client ID also saved — now click "Connect Gmail".':'';
+        showMsg('fbMsg','✅ Config file imported! Click "Connect Firebase" to start syncing.'+gmailNote,'success');
+        // Auto-connect after short delay so UI updates first
+        setTimeout(initFirebase, 300);
       } else {
         showMsg('fbMsg','⚠️ Config file missing apiKey or projectId. Double-check your file.','error');
       }
@@ -1929,22 +1981,7 @@ function saveFirebaseConfig(){
   if(!cfg.apiKey||!cfg.projectId){showMsg('fbMsg','Fill in at least API Key and Project ID','error');return;}
   fbConfig=cfg;LS.set('jt2_fbconfig',cfg);
   initFirebase();
-  showMsg('fbMsg','✅ Firebase connected! Syncing data across all devices now...','success');
-}
-
-function disconnectFirebase(){
-  fbConnected=false;db=null;updateFbStatus(false);
-  showMsg('fbMsg','Firebase disconnected. Data saves locally only.','info');
-}
-
-function updateFbStatus(on){
-  const p=document.getElementById('fbPill');const t=document.getElementById('fbText');
-  p.className='firebase-pill '+(on?'on':'off');
-  t.textContent=on?'☁ Cloud Synced':'Connect Cloud DB';
-  const sd=document.getElementById('fbStatusDetail');
-  if(sd)sd.innerHTML=on
-    ?`<span style="color:var(--green)">✅ Connected to <strong>${fbConfig.projectId}</strong> — syncing across all your devices</span>`
-    :`<span style="color:var(--red)">❌ Not connected — data saved on this browser only</span>`;
+  // initFirebase() shows its own success/error message
 }
 
 function showSetup(type){
