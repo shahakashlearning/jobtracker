@@ -674,6 +674,52 @@ body.theme-light .card-gold { background: linear-gradient(135deg,#ffffff 0%,rgba
   </div>
 
 
+  <!-- AUTHORIZED DOMAINS FIX — PRIMARY ROOT CAUSE OF HANGING -->
+  <div class="card" style="border-color:rgba(74,144,217,0.4);">
+    <div class="card-header">
+      <div class="card-title" style="color:var(--blue2)"><span class="card-title-icon">🌐</span>Fix Firebase Authorized Domains (PRIMARY fix — do this first)</div>
+    </div>
+    <div class="alert alert-info" style="font-size:13px;margin-bottom:14px;">
+      <strong>This is the #1 root cause of the "Uploading..." stuck button and all sync failures.</strong><br>
+      Firebase blocks all Firestore requests from domains not listed in its Authorized Domains. Your domain <code>shahakashlearning.github.io</code> must be added there.
+    </div>
+    <div class="setup-step">
+      <div class="setup-num">1</div>
+      <div class="setup-body">
+        <div class="setup-title">Open Firebase Console → Authentication → Settings</div>
+        <div class="setup-desc">
+          Go to <a href="https://console.firebase.google.com" target="_blank" style="color:var(--gold)">console.firebase.google.com</a> → Your <strong>JobTracker</strong> project → Left sidebar → <strong>Build</strong> → <strong>Authentication</strong> → Click the <strong>Settings</strong> tab at the top
+        </div>
+      </div>
+    </div>
+    <div class="setup-step">
+      <div class="setup-num">2</div>
+      <div class="setup-body">
+        <div class="setup-title">Add your domain to Authorized Domains</div>
+        <div class="setup-desc">
+          You will see an <strong>"Authorized domains"</strong> section with a list. Click <strong>"Add domain"</strong> and add:
+        </div>
+        <div style="background:var(--surface3);border-radius:8px;padding:12px;margin-top:8px;font-family:monospace;font-size:14px;color:var(--gold3);border:1px solid var(--border2);">
+          shahakashlearning.github.io
+        </div>
+        <button onclick="copyDomain()" class="btn btn-secondary btn-sm" style="margin-top:10px">📋 Copy Domain</button>
+      </div>
+    </div>
+    <div class="setup-step">
+      <div class="setup-num">3</div>
+      <div class="setup-body">
+        <div class="setup-title">Click Add → then come back here and test</div>
+        <div class="setup-desc">
+          After adding, come back here → click <strong>"Connect Firebase"</strong> → you will see <span style="color:var(--green)">✅ Write access confirmed</span> within 5 seconds. Then click <strong>"Push Local Data to Cloud"</strong> — it will complete instantly.
+        </div>
+      </div>
+    </div>
+    <div class="alert alert-warn" style="font-size:12px;margin-top:8px;">
+      ⚠️ If Authentication is not enabled in your Firebase project: Left sidebar → Build → Authentication → Click "Get started" → Enable <strong>Email/Password</strong> provider → then go to Settings tab to find Authorized Domains.
+    </div>
+  </div>
+
+
   <!-- FIRESTORE RULES FIX — most common reason sync fails -->
   <div class="card" style="border-color:rgba(248,113,113,0.3);">
     <div class="card-header">
@@ -920,86 +966,97 @@ let clDefaultName=localStorage.getItem('jt2_cldname')||null;
 let gmailToken=null;
 let clientId=localStorage.getItem('jt2_clientid')||'';
 let fbConfig=LS.getObj('jt2_fbconfig');
-let db=null;
-let fbConnected=false;
+// db and fb_state live inside FB object below — do not reference loose vars
 
 // ============================================================
-// FIREBASE ENGINE — SINGLE SOURCE OF TRUTH
+// FIREBASE ENGINE — TIMEOUT-SAFE, SINGLE SOURCE OF TRUTH
 // ============================================================
-// Use a single frozen object so state can never be partially reset
+// FB is the ONE place that holds Firebase state. Nothing else touches it.
 const FB = {
-  db: null,
-  connected: false,
+  db:          null,
+  connected:   false,
   listenersOn: false,
-  appReady: false,
-  unsubs: [],   // unsubscribe functions for listeners
-
+  appReady:    false,
+  unsubs:      [],
   get ok(){ return !!(this.db && this.connected); }
 };
 
-// Called once — safe to call multiple times
+// Wrap a Firestore promise so it never hangs forever.
+// Resolves with {ok:true} on success, {ok:false, code, msg} on failure/timeout.
+function fbOp(promise, timeoutMs = 8000){
+  return new Promise(resolve => {
+    const timer = setTimeout(() => resolve({ok:false, code:'timeout',
+      msg:'Firestore timed out — check Authorized Domains (see step below)'}), timeoutMs);
+    promise
+      .then(()  => { clearTimeout(timer); resolve({ok:true}); })
+      .catch(e  => { clearTimeout(timer); resolve({ok:false, code:e.code||'error', msg:e.message}); });
+  });
+}
+
+// ── INIT ────────────────────────────────────────────────────
 function initFirebase(){
   const cfg = fbConfig;
   if(!cfg || !cfg.apiKey || !cfg.projectId){
-    fbShowMsg('No Firebase config saved. Import your jobtracker-config.json file first.', 'error');
+    fbShowMsg('No Firebase config. Import your jobtracker-config.json file first.', 'error');
     return;
   }
-
   try{
-    // Step 1: init Firebase app exactly once
     if(!FB.appReady){
-      if(!firebase.apps.length){
-        firebase.initializeApp(cfg);
-      }
+      if(!firebase.apps.length) firebase.initializeApp(cfg);
       FB.appReady = true;
     }
-
-    // Step 2: get Firestore — NO persistence (persistence causes the async bug)
     FB.db = firebase.firestore();
-
-    // Step 3: mark connected SYNCHRONOUSLY before any async work
     FB.connected = true;
     updateFbPill(true);
-    fbShowMsg('\u2705 Firebase connected! Attaching realtime sync...', 'success');
-
-    // Step 4: attach listeners (they self-heal on reconnect)
-    attachListeners();
-
+    fbShowMsg('✅ Firebase connected! Testing write access...', 'success');
+    // Run a quick write test so user sees immediately if rules are blocking
+    testFirestoreAccess();
+    if(!FB.listenersOn) attachListeners();
   } catch(e){
-    console.error('[FB] initFirebase error:', e);
-    FB.connected = false;
-    updateFbPill(false);
-    fbShowMsg('\u274c Firebase error: ' + e.message, 'error');
+    console.error('[FB] init error:', e);
+    FB.connected = false; updateFbPill(false);
+    fbShowMsg('❌ Firebase error: ' + e.message, 'error');
   }
 }
 
+// ── ACCESS TEST (runs once after connect) ───────────────────
+async function testFirestoreAccess(){
+  const res = await fbOp(FB.db.collection('_test').doc('ping').set({t: Date.now()}), 6000);
+  if(res.ok){
+    fbShowMsg('✅ Firebase connected & write access confirmed! Live sync is active.', 'success');
+    // clean up test doc silently
+    FB.db.collection('_test').doc('ping').delete().catch(()=>{});
+  } else if(res.code === 'timeout'){
+    FB.connected = false; updateFbPill(false);
+    fbShowMsg('⏱ Firestore timed out. Your domain is likely not in Firebase Authorized Domains. See the fix below.', 'error');
+  } else if(res.code === 'permission-denied'){
+    FB.connected = false; updateFbPill(false);
+    fbShowMsg('❌ Permission denied. Fix Firestore Rules — see the red box in Settings.', 'error');
+  } else {
+    fbShowMsg('⚠️ Write test failed (' + res.code + '): ' + res.msg, 'error');
+  }
+}
+
+// ── REALTIME LISTENERS ──────────────────────────────────────
 function attachListeners(){
-  if(!FB.db) return;
-  if(FB.listenersOn) return;   // already attached — never attach twice
+  if(!FB.db || FB.listenersOn) return;
   FB.listenersOn = true;
-
-  // collection → handler mapping
   const map = {
-    contacts: (d) => { contacts=d; LS.set('jt2_contacts',d); renderContacts(); populateDropdowns(); pingPill(); },
-    jobs:     (d) => { jobs=d;     LS.set('jt2_jobs',d);     renderJobs();     renderDashboard();   pingPill(); },
-    templates:(d) => { templates=d;LS.set('jt2_templates',d);renderTemplates(); },
-    sent:     (d) => { sentLog=d;  LS.set('jt2_sent',d);     renderSentLog();  },
-    goals:    (d) => { goals=d;    LS.set('jt2_goals',d);    renderGoals();    renderDashboard();   },
-    journal:  (d) => { journal=d;  LS.set('jt2_journal',d);  renderJournal();  },
+    contacts:(d)=>{ contacts=d; LS.set('jt2_contacts',d); renderContacts(); populateDropdowns(); pingPill(); },
+    jobs:    (d)=>{ jobs=d;     LS.set('jt2_jobs',d);     renderJobs();     renderDashboard();   pingPill(); },
+    templates:(d)=>{ templates=d;LS.set('jt2_templates',d);renderTemplates(); },
+    sent:    (d)=>{ sentLog=d;  LS.set('jt2_sent',d);     renderSentLog();  },
+    goals:   (d)=>{ goals=d;    LS.set('jt2_goals',d);    renderGoals();    renderDashboard();   },
+    journal: (d)=>{ journal=d;  LS.set('jt2_journal',d);  renderJournal();  },
   };
-
   Object.entries(map).forEach(([col, handler]) => {
     const unsub = FB.db.collection(col).onSnapshot(
-      snap => {
-        const data = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        handler(data);
-      },
-      err => {
-        console.error('[FB] listener error [' + col + ']:', err.code);
+      snap => handler(snap.docs.map(d => ({id:d.id, ...d.data()}))),
+      err  => {
+        console.error('[FB] listener error ['+col+']:', err.code);
         if(err.code === 'permission-denied'){
-          fbShowMsg('\u274c Firestore permission denied on "' + col + '". Fix Firestore Rules — see red box below.', 'error');
-          FB.connected = false;
-          updateFbPill(false);
+          fbShowMsg('❌ Firestore permission denied. Fix Firestore Rules — see red box in Settings.', 'error');
+          FB.connected = false; updateFbPill(false);
         }
       }
     );
@@ -1008,12 +1065,9 @@ function attachListeners(){
 }
 
 function disconnectFirebase(){
-  // Detach all listeners cleanly
-  FB.unsubs.forEach(fn => { try{ fn(); } catch(e){} });
-  FB.unsubs = [];
-  FB.listenersOn = false;
-  FB.connected = false;
-  FB.db = null;
+  FB.unsubs.forEach(fn => { try{ fn(); }catch(e){} });
+  FB.unsubs = []; FB.listenersOn = false;
+  FB.connected = false; FB.db = null;
   updateFbPill(false);
   fbShowMsg('Firebase disconnected.', 'info');
 }
@@ -1023,115 +1077,112 @@ function pingPill(){
   if(p){ p.style.boxShadow='0 0 0 5px rgba(52,211,153,0.4)'; setTimeout(()=>p.style.boxShadow='',1000); }
 }
 
-// ── WRITE: save one document ─────────────────────────────────
+// ── WRITE ───────────────────────────────────────────────────
 async function saveToCloud(collection, id, data){
-  if(!FB.ok){
-    console.warn('[FB] saveToCloud skipped — not connected');
-    return;
-  }
-  try{
-    const clean = JSON.parse(JSON.stringify(data));
-    await FB.db.collection(collection).doc(String(id)).set(clean);
-    console.log('[FB] saved:', collection, id);
-  } catch(e){
-    console.error('[FB] saveToCloud error:', e.code, e.message);
-    if(e.code === 'permission-denied'){
-      fbShowMsg('\u274c Write blocked — fix Firestore Rules. See red box in Settings.', 'error');
-    }
+  if(!FB.ok) return;
+  const clean = JSON.parse(JSON.stringify(data));
+  const res   = await fbOp(FB.db.collection(collection).doc(String(id)).set(clean));
+  if(!res.ok){
+    console.error('[FB] saveToCloud error:', res.code, res.msg);
+    if(res.code === 'permission-denied')
+      fbShowMsg('❌ Write blocked by Firestore rules. See Settings.', 'error');
+    if(res.code === 'timeout')
+      fbShowMsg('⏱ Write timed out — check Authorized Domains. See Settings.', 'error');
   }
 }
 
-// ── DELETE ───────────────────────────────────────────────────
+// ── DELETE ──────────────────────────────────────────────────
 async function deleteFromCloud(collection, id){
   if(!FB.ok) return;
-  try{ await FB.db.collection(collection).doc(String(id)).delete(); }
-  catch(e){ console.error('[FB] delete error:', e.message); }
+  const res = await fbOp(FB.db.collection(collection).doc(String(id)).delete());
+  if(!res.ok) console.error('[FB] delete error:', res.code, res.msg);
 }
 
-// ── SYNC NOW: manual pull from cloud ─────────────────────────
+// ── SYNC NOW (pull cloud → this browser) ────────────────────
 async function syncFromCloud(){
   if(!FB.ok){
-    fbShowMsg('\u26a0\ufe0f Firebase not connected. Click "Connect Firebase" first.', 'error');
+    fbShowMsg('⚠️ Firebase not connected. Click "Connect Firebase" first.', 'error');
     return;
   }
   const btn = document.getElementById('fbSyncBtn');
   if(btn){ btn.disabled=true; btn.textContent='Syncing...'; }
   try{
-    const map = { jobs:'jt2_jobs', contacts:'jt2_contacts', templates:'jt2_templates',
-                  sent:'jt2_sent', goals:'jt2_goals', journal:'jt2_journal' };
+    const map = {jobs:'jt2_jobs',contacts:'jt2_contacts',templates:'jt2_templates',
+                 sent:'jt2_sent',goals:'jt2_goals',journal:'jt2_journal'};
     for(const [col, lsKey] of Object.entries(map)){
       const snap = await FB.db.collection(col).get();
-      const data = snap.docs.map(d => ({ id:d.id, ...d.data() }));
+      const data = snap.docs.map(d=>({id:d.id,...d.data()}));
       LS.set(lsKey, data);
-      if(col==='jobs')     jobs=data;
-      if(col==='contacts'){ contacts=data; }
+      if(col==='jobs')      jobs=data;
+      if(col==='contacts')  contacts=data;
       if(col==='templates') templates=data;
       if(col==='sent')      sentLog=data;
       if(col==='goals')     goals=data;
       if(col==='journal')   journal=data;
     }
     renderAll();
-    fbShowMsg('\u2705 Sync complete — all data is up to date.', 'success');
+    fbShowMsg('✅ Sync complete — all data is up to date.', 'success');
   } catch(e){
-    console.error('[FB] syncFromCloud error:', e);
     fbShowMsg('Sync failed: ' + e.message, 'error');
   }
-  if(btn){ btn.disabled=false; btn.textContent='\ud83d\udd04 Sync Now'; }
+  if(btn){ btn.disabled=false; btn.textContent='🔄 Sync Now'; }
 }
 
-// ── PUSH: migrate existing local data to cloud (one-time) ─────
+// ── PUSH (migrate local → cloud, one-time) ──────────────────
 async function pushLocalToCloud(){
   if(!FB.ok){
-    fbShowMsg('\u26a0\ufe0f Firebase not connected. Click "Connect Firebase" first.', 'error');
+    fbShowMsg('⚠️ Firebase not connected. Click "Connect Firebase" first.', 'error');
     return;
   }
   const btn = document.getElementById('pushLocalBtn');
-  if(btn){ btn.disabled=true; btn.innerHTML='\u23f3 Uploading...'; }
+  if(btn){ btn.disabled=true; btn.innerHTML='⏳ Uploading...'; }
   let pushed=0, failed=0;
-  try{
-    const allData = { jobs, contacts, templates, sent:sentLog, goals, journal };
-    for(const [col, items] of Object.entries(allData)){
-      if(!Array.isArray(items)) continue;
-      for(const item of items){
-        if(!item || !item.id) continue;
-        try{
-          const clean = JSON.parse(JSON.stringify(item));
-          await FB.db.collection(col).doc(String(item.id)).set(clean);
-          pushed++;
-        } catch(e){
-          failed++;
-          console.error('[FB] push error ['+col+']:', e.code, e.message);
-          if(e.code === 'permission-denied'){
-            fbShowMsg('\u274c BLOCKED by Firestore rules. Fix the rules first — see red box below. Then try again.', 'error');
-            if(btn){ btn.disabled=false; btn.innerHTML='\u2b06\ufe0f Push Local Data to Cloud'; }
-            return;
-          }
+  const allData = {jobs, contacts, templates, sent:sentLog, goals, journal};
+  for(const [col, items] of Object.entries(allData)){
+    if(!Array.isArray(items)) continue;
+    for(const item of items){
+      if(!item || !item.id) continue;
+      const clean = JSON.parse(JSON.stringify(item));
+      const res   = await fbOp(FB.db.collection(col).doc(String(item.id)).set(clean), 8000);
+      if(res.ok){
+        pushed++;
+      } else {
+        failed++;
+        console.error('[FB] push error ['+col+']:', res.code, res.msg);
+        if(res.code === 'permission-denied'){
+          fbShowMsg('❌ BLOCKED: Firestore rules deny writes. Fix rules first — see red box below.', 'error');
+          if(btn){ btn.disabled=false; btn.innerHTML='⬆️ Push Local Data to Cloud'; }
+          return;
+        }
+        if(res.code === 'timeout'){
+          fbShowMsg('⏱ TIMED OUT: Firestore not reachable. Add your domain to Firebase Authorized Domains — see blue box below.', 'error');
+          if(btn){ btn.disabled=false; btn.innerHTML='⬆️ Push Local Data to Cloud'; }
+          return;
         }
       }
     }
-    fbShowMsg('\u2705 Done! ' + pushed + ' records pushed to cloud. Open other devices — data appears automatically.', 'success');
-  } catch(e){
-    fbShowMsg('\u274c Push error: ' + e.message, 'error');
   }
-  if(btn){ btn.disabled=false; btn.innerHTML='\u2b06\ufe0f Push Local Data to Cloud'; }
+  if(btn){ btn.disabled=false; btn.innerHTML='⬆️ Push Local Data to Cloud'; }
+  if(failed === 0){
+    fbShowMsg('✅ Done! ' + pushed + ' records uploaded. Open any other device — data appears automatically.', 'success');
+  } else {
+    fbShowMsg('⚠️ ' + pushed + ' uploaded, ' + failed + ' failed. Check console (F12) for details.', 'warn');
+  }
 }
 
-// ── STATUS HELPERS ────────────────────────────────────────────
+// ── UI HELPERS ───────────────────────────────────────────────
 function updateFbPill(on){
   const p = document.getElementById('fbPill');
   const t = document.getElementById('fbText');
   if(p) p.className = 'firebase-pill ' + (on ? 'on' : 'off');
-  if(t) t.textContent = on ? '\u2601 Cloud Synced' : 'Connect Cloud DB';
+  if(t) t.textContent = on ? '☁ Cloud Synced' : 'Connect Cloud DB';
   const sd = document.getElementById('fbStatusDetail');
   if(sd) sd.innerHTML = on
-    ? '<span style="color:var(--green)">\u2705 Connected to <strong>' + (fbConfig.projectId||'') + '</strong> \u2014 syncing across all devices</span>'
-    : '<span style="color:var(--red)">\u274c Not connected \u2014 data saved on this browser only</span>';
+    ? '<span style="color:var(--green)">✅ Connected to <strong>' + (fbConfig.projectId||'') + '</strong> — live sync active</span>'
+    : '<span style="color:var(--red)">❌ Not connected — data saved locally only</span>';
 }
 
-// Unified message helper for Settings page Firebase messages
-function fbShowMsg(msg, type){
-  showMsg('fbMsg', msg, type);
-}
+function fbShowMsg(msg, type){ showMsg('fbMsg', msg, type); }
 // ============================================================
 // INIT
 // ============================================================
@@ -2069,6 +2120,13 @@ function seedTemplates(){
 }
 
 
+
+
+function copyDomain(){
+  navigator.clipboard.writeText('shahakashlearning.github.io').then(()=>{
+    showMsg('fbMsg','✅ Domain copied! Paste it in Firebase → Authentication → Settings → Authorized Domains → Add domain','success');
+  }).catch(()=>{ alert('Copy this: shahakashlearning.github.io'); });
+}
 
 // Copy Firestore rules to clipboard
 function copyRules(){
