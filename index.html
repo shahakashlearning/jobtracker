@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>JobTrack Pro v2 — Automotive Career Suite</title>
+<title>Job Tracker — Akash Career Suite</title>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -228,6 +228,33 @@ code{background:var(--surface3);border:1px solid var(--border);padding:2px 7px;b
 ::-webkit-scrollbar-track{background:var(--bg);}
 ::-webkit-scrollbar-thumb{background:var(--surface3);border-radius:3px;}
 ::-webkit-scrollbar-thumb:hover{background:var(--gold);}
+
+/* THEME SYSTEM */
+body.theme-light {
+  --bg: #f0f2f8;
+  --surface: #ffffff;
+  --surface2: #f5f6fb;
+  --surface3: #eaedf5;
+  --border: rgba(0,0,0,0.08);
+  --border2: rgba(0,0,0,0.14);
+  --text: #1a1d2e;
+  --text2: #4a5080;
+  --text3: #8a90b0;
+  --gold: #b8860b;
+  --gold2: #c9960d;
+  --gold3: #a07000;
+}
+body.theme-light .header { background: rgba(255,255,255,0.95); }
+body.theme-light .nav { background: #ffffff; }
+body.theme-light .stat { background: #ffffff; }
+body.theme-light code { background: #eaedf5; color: #b8860b; }
+body.theme-light .modal { background: #ffffff; }
+body.theme-light input, body.theme-light select, body.theme-light textarea { background: #f5f6fb; color: #1a1d2e; border-color: rgba(0,0,0,0.15); }
+body.theme-light th { background: #f0f2f8; color: #4a5080; }
+body.theme-light .motiv-card { background: linear-gradient(135deg,#fff 0%,rgba(201,168,76,0.06) 100%); }
+body.theme-light .card-gold { background: linear-gradient(135deg,#ffffff 0%,rgba(201,168,76,0.04) 100%); }
+.theme-btn { background: var(--surface2); border: 1px solid var(--border2); color: var(--text2); padding: 6px 13px; border-radius: 20px; cursor: pointer; font-size: 12px; font-weight: 600; transition: all .2s; font-family: inherit; display: flex; align-items: center; gap: 6px; }
+.theme-btn:hover { border-color: var(--gold); color: var(--gold); }
 </style>
 </head>
 <body>
@@ -237,11 +264,11 @@ code{background:var(--surface3);border:1px solid var(--border);padding:2px 7px;b
   <div class="logo">
     <div class="logo-icon">🚗</div>
     <div>
-      <div class="logo-text">JobTrack Pro</div>
-      <div class="logo-sub">Automotive Career Suite</div>
+      <div class="logo-text">Job Tracker</div>
+      <div class="logo-sub">Akash Career Suite</div>
     </div>
   </div>
-  <div class="header-right">
+  <div class="header-right"><button class="theme-btn" id="themeToggleBtn" onclick="toggleTheme()">🌙 Dark</button>
     <div class="firebase-pill off" id="fbPill" onclick="showSetup('firebase')">
       <div class="dot"></div><span id="fbText">Connect Cloud DB</span>
     </div>
@@ -608,6 +635,7 @@ code{background:var(--surface3);border:1px solid var(--border);padding:2px 7px;b
     <div style="display:flex;gap:10px;flex-wrap:wrap;">
       <button class="btn btn-primary" onclick="saveFirebaseConfig()" id="fbConnectBtn">🔥 Connect Firebase</button>
       <button class="btn btn-success" onclick="syncFromCloud()" id="fbSyncBtn">🔄 Sync Now</button>
+      <button class="btn btn-blue" onclick="pushLocalToCloud()" id="pushLocalBtn">⬆️ Push Local Data to Cloud</button>
       <button class="btn btn-danger btn-sm" onclick="disconnectFirebase()">✕ Disconnect</button>
     </div>
     <div id="fbMsg" style="margin-top:12px;"></div>
@@ -827,22 +855,67 @@ let fbConfig=LS.getObj('jt2_fbconfig');
 let db=null;
 let fbConnected=false;
 
-// Firebase
+// ============================================================
+// FIREBASE — FIXED INIT + REALTIME SYNC
+// ============================================================
 function initFirebase(){
-  if(!fbConfig.apiKey)return;
+  if(!fbConfig.apiKey||!fbConfig.projectId)return;
   try{
-    if(!firebase.apps.length) firebase.initializeApp(fbConfig);
-    db=firebase.firestore();
+    if(firebase.apps.length){
+      // App already exists — just get firestore
+      db=firebase.app().firestore();
+    } else {
+      firebase.initializeApp(fbConfig);
+      db=firebase.firestore();
+    }
     fbConnected=true;
     updateFbStatus(true);
-    syncFromCloud();
-  }catch(e){console.error('Firebase init error:',e);fbConnected=false;}
+    attachRealtimeListeners();
+  }catch(e){
+    console.error('Firebase init error:',e);
+    fbConnected=false;
+    updateFbStatus(false);
+    showMsg('fbMsg','Firebase error: '+e.message,'error');
+  }
+}
+
+// REALTIME LISTENERS — push/pull happens automatically, no manual sync needed
+let listenersAttached=false;
+function attachRealtimeListeners(){
+  if(!db||listenersAttached)return;
+  listenersAttached=true;
+  const colMap={
+    'contacts': (d)=>{ contacts=d; LS.set('jt2_contacts',d); renderContacts(); populateDropdowns(); showSyncPing(); },
+    'jobs':     (d)=>{ jobs=d;     LS.set('jt2_jobs',d);     renderJobs(); renderDashboard(); showSyncPing(); },
+    'templates':(d)=>{ templates=d;LS.set('jt2_templates',d);renderTemplates(); },
+    'sent':     (d)=>{ sentLog=d;  LS.set('jt2_sent',d);     renderSentLog(); },
+    'goals':    (d)=>{ goals=d;    LS.set('jt2_goals',d);    renderGoals(); renderDashboard(); },
+    'journal':  (d)=>{ journal=d;  LS.set('jt2_journal',d);  renderJournal(); },
+  };
+  Object.entries(colMap).forEach(([col,handler])=>{
+    db.collection(col).onSnapshot(snap=>{
+      const data=snap.docs.map(d=>({id:d.id,...d.data()}));
+      handler(data);
+    }, err=>console.error('Listener ['+col+']:',err));
+  });
+  setTimeout(()=>showMsg('fbMsg','\u2705 Live sync active \u2014 changes sync instantly across all devices!','success'),500);
+}
+
+function showSyncPing(){
+  const p=document.getElementById('fbPill');
+  if(!p)return;
+  p.style.boxShadow='0 0 0 4px rgba(52,211,153,0.35)';
+  setTimeout(()=>p.style.boxShadow='',900);
 }
 
 async function saveToCloud(collection, id, data){
   if(!db||!fbConnected)return;
-  try{await db.collection(collection).doc(id).set(data);}
-  catch(e){console.error('Cloud save error:',e);}
+  try{
+    const clean=JSON.parse(JSON.stringify(data));
+    await db.collection(collection).doc(id).set(clean);
+  }catch(e){
+    console.error('Cloud save error ['+collection+']:',e);
+  }
 }
 
 async function deleteFromCloud(collection, id){
@@ -852,30 +925,53 @@ async function deleteFromCloud(collection, id){
 }
 
 async function syncFromCloud(){
-  if(!db||!fbConnected)return;
+  if(!db||!fbConnected){
+    showMsg('fbMsg','Firebase not connected. Go to Settings \u2192 Step 1 to connect.','error');
+    return;
+  }
   try{
+    showMsg('fbMsg','\ud83d\udd04 Syncing...','info');
     const cols=['jobs','contacts','templates','sent','goals','journal'];
     for(const col of cols){
       const snap=await db.collection(col).get();
-      if(!snap.empty){
-        const data=snap.docs.map(d=>d.data());
-        if(col==='jobs')jobs=data;
-        if(col==='contacts')contacts=data;
-        if(col==='templates')templates=data;
-        if(col==='sent')sentLog=data;
-        if(col==='goals')goals=data;
-        if(col==='journal')journal=data;
-        LS.set('jt2_'+col,data);
-      }
+      const data=snap.docs.map(d=>({id:d.id,...d.data()}));
+      if(col==='jobs')jobs=data;
+      if(col==='contacts')contacts=data;
+      if(col==='templates')templates=data;
+      if(col==='sent')sentLog=data;
+      if(col==='goals')goals=data;
+      if(col==='journal')journal=data;
+      LS.set('jt2_'+col,data);
     }
     renderAll();
-  }catch(e){console.error('Sync error:',e);}
+    showMsg('fbMsg','\u2705 Sync complete!','success');
+  }catch(e){showMsg('fbMsg','Sync failed: '+e.message,'error');}
+}
+
+async function pushLocalToCloud(){
+  if(!db||!fbConnected){showMsg('fbMsg','Connect Firebase first','error');return;}
+  const btn=document.getElementById('pushLocalBtn');
+  if(btn){btn.disabled=true;btn.innerHTML='\u23f3 Uploading...';}
+  try{
+    const allData={jobs,contacts,templates,sent:sentLog,goals,journal};
+    for(const [col,items] of Object.entries(allData)){
+      for(const item of items){
+        if(item&&item.id){
+          const clean=JSON.parse(JSON.stringify(item));
+          await db.collection(col).doc(item.id).set(clean);
+        }
+      }
+    }
+    showMsg('fbMsg','\u2705 All local data pushed to cloud! Visible on all devices now.','success');
+  }catch(e){showMsg('fbMsg','Push failed: '+e.message,'error');}
+  if(btn){btn.disabled=false;btn.innerHTML='\u2b06\ufe0f Push Local Data to Cloud';}
 }
 
 // ============================================================
 // INIT
 // ============================================================
 function init(){
+  loadTheme();
   if(!templates.length) seedTemplates();
   if(clientId) document.getElementById('clientIdInput').value=clientId;
   if(fbConfig.apiKey){
@@ -1075,8 +1171,11 @@ async function saveJob(){
   if(id){const i=jobs.findIndex(x=>x.id===id);jobs[i]=data;}
   else jobs.unshift(data);
   LS.set('jt2_jobs',jobs);
-  await saveToCloud('jobs',data.id,data);
-  closeModal('mJob');renderJobs();renderDashboard();
+  // Close and render immediately, push to cloud in background
+  closeModal('mJob');
+  renderJobs();
+  renderDashboard();
+  saveToCloud('jobs',data.id,data);
 }
 
 async function deleteJob(id){
@@ -1184,11 +1283,16 @@ async function saveContact(){
     phone:document.getElementById('cPhone').value.trim(),linkedin:document.getElementById('cLinkedin').value.trim(),
     desig:document.getElementById('cDesig').value.trim(),notes:document.getElementById('cNotes').value.trim(),
     lastContact:document.getElementById('cLastContact').value};
-  if(id){const i=contacts.findIndex(x=>x.id===id);contacts[i]=data;}
+  // Update local array immediately
+  if(id){const i=contacts.findIndex(x=>x.id===id);if(i>-1)contacts[i]=data;else contacts.unshift(data);}
   else contacts.unshift(data);
   LS.set('jt2_contacts',contacts);
-  await saveToCloud('contacts',data.id,data);
-  closeModal('mContact');renderContacts();populateDropdowns();
+  // Close modal and render IMMEDIATELY from local data (don't wait for cloud)
+  closeModal('mContact');
+  renderContacts();
+  populateDropdowns();
+  // Then push to cloud in background (realtime listener will confirm)
+  saveToCloud('contacts',data.id,data);
 }
 
 async function deleteContact(id){
@@ -1486,7 +1590,7 @@ const QUOTES=[
   {q:"Opportunities don't happen. You create them.",a:"Chris Grosser"},
   {q:"An engineer's first problem in any new situation is how not to think about the old situation.",a:"Tom Lehrer"},
   {q:"Your work is going to fill a large part of your life, and the only way to be truly satisfied is to do what you believe is great work.",a:"Steve Jobs"},
-  {q:"The automotive industry runs on passion. Bring yours to every application.",a:"JobTrack Pro"},
+  {q:"The automotive industry runs on passion. Bring yours to every application.",a:"Job Tracker"},
   {q:"Persistence. Perfection. Patience. Power. Prioritize your passion — it will keep you sane.",a:"Criss Jami"},
   {q:"Don't watch the clock; do what it does. Keep going.",a:"Sam Levenson"},
   {q:"The difference between a successful person and others is not a lack of strength but a lack of will.",a:"Vince Lombardi"},
@@ -1801,6 +1905,26 @@ function seedTemplates(){
      body:`Dear Hiring Team,\n\nI was referred to this opportunity by [Referrer Name] and am excited to apply for the {{role}} position at {{company}}.\n\nWith {{exp}} of experience in the automotive industry, I bring [key skills]. I have attached my CV and cover letter for your review.\n\nThank you for your consideration.\n\nBest regards,\n{{name}}\n📞 {{phone}}\n🔗 {{linkedin}}`}
   ];
   LS.set('jt2_templates',templates);
+}
+
+
+// ============================================================
+// THEME SYSTEM
+// ============================================================
+function toggleTheme(){
+  const isLight=document.body.classList.toggle('theme-light');
+  localStorage.setItem('jt2_theme', isLight?'light':'dark');
+  const btn=document.getElementById('themeToggleBtn');
+  if(btn)btn.innerHTML=isLight?'🌙 Dark':'☀️ Light';
+}
+
+function loadTheme(){
+  const saved=localStorage.getItem('jt2_theme');
+  if(saved==='light'){
+    document.body.classList.add('theme-light');
+    const btn=document.getElementById('themeToggleBtn');
+    if(btn)btn.innerHTML='🌙 Dark';
+  }
 }
 
 window.addEventListener('load',init);
