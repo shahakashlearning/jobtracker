@@ -531,10 +531,10 @@ body.theme-light .card-gold { background: linear-gradient(135deg,#ffffff 0%,rgba
 <!-- SETTINGS -->
 <div class="page" id="page-settings">
 
-  <!-- CONNECTION STATUS PANEL -->
+  <!-- CONNECTION STATUS + WORKFLOW -->
   <div class="card card-gold" id="connStatusCard">
     <div class="card-header"><div class="card-title"><span class="card-title-icon">🔌</span>Connection Status</div></div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;" id="connStatusGrid">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px" id="connStatusGrid">
       <div style="background:var(--surface2);border-radius:10px;padding:16px;border:1px solid var(--border)">
         <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">🔥 Firebase Cloud DB</div>
         <div id="fbStatusDetail" style="font-size:13px;color:var(--text3)">Not connected — data stays on this device only</div>
@@ -542,6 +542,25 @@ body.theme-light .card-gold { background: linear-gradient(135deg,#ffffff 0%,rgba
       <div style="background:var(--surface2);border-radius:10px;padding:16px;border:1px solid var(--border)">
         <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">📧 Gmail</div>
         <div id="gmailStatusDetail" style="font-size:13px;color:var(--text3)">Not connected — cannot send emails</div>
+      </div>
+    </div>
+
+    <!-- BUTTON EXPLANATION -->
+    <div style="background:var(--surface2);border-radius:10px;padding:16px;border:1px solid var(--border)">
+      <div style="font-size:13px;font-weight:700;color:var(--gold2);margin-bottom:12px">📖 What each button does:</div>
+      <div style="display:grid;gap:10px;">
+        <div style="display:flex;gap:12px;align-items:flex-start;padding:10px;background:var(--surface3);border-radius:8px">
+          <div style="background:linear-gradient(135deg,var(--gold),var(--gold2));color:#0d0f14;padding:4px 10px;border-radius:6px;font-size:12px;font-weight:700;white-space:nowrap;flex-shrink:0">🔥 Connect Firebase</div>
+          <div style="font-size:12px;color:var(--text2);line-height:1.6">Connects this browser to your Firebase database. Run this <strong>once per device</strong> after importing config file. After connecting, realtime listeners activate — any change on any device appears everywhere within 1 second automatically.</div>
+        </div>
+        <div style="display:flex;gap:12px;align-items:flex-start;padding:10px;background:var(--surface3);border-radius:8px">
+          <div style="background:rgba(52,211,153,0.15);color:var(--green);border:1px solid rgba(52,211,153,0.3);padding:4px 10px;border-radius:6px;font-size:12px;font-weight:700;white-space:nowrap;flex-shrink:0">🔄 Sync Now</div>
+          <div style="font-size:12px;color:var(--text2);line-height:1.6"><strong>Pulls</strong> latest data from cloud → into this browser. Use this if you feel data is out of date. Not normally needed — realtime listeners do this automatically.</div>
+        </div>
+        <div style="display:flex;gap:12px;align-items:flex-start;padding:10px;background:var(--surface3);border-radius:8px">
+          <div style="background:rgba(74,144,217,0.15);color:var(--blue2);border:1px solid rgba(74,144,217,0.3);padding:4px 10px;border-radius:6px;font-size:12px;font-weight:700;white-space:nowrap;flex-shrink:0">⬆️ Push Local Data</div>
+          <div style="font-size:12px;color:var(--text2);line-height:1.6"><strong>One-time migration only.</strong> Use this to upload data that was saved in this browser BEFORE Firebase was connected (like your existing 2 HR contacts in Edge). After this, all future saves go to cloud automatically — you never need this button again.</div>
+        </div>
       </div>
     </div>
   </div>
@@ -652,6 +671,55 @@ body.theme-light .card-gold { background: linear-gradient(135deg,#ffffff 0%,rgba
       <button class="btn btn-danger btn-sm" onclick="disconnectGmail()">✕ Disconnect</button>
     </div>
     <div id="gmailMsg" style="margin-top:12px;"></div>
+  </div>
+
+
+  <!-- FIRESTORE RULES FIX — most common reason sync fails -->
+  <div class="card" style="border-color:rgba(248,113,113,0.3);">
+    <div class="card-header">
+      <div class="card-title" style="color:var(--red)"><span class="card-title-icon">🔒</span>Fix Firestore Rules (Required for sync to work)</div>
+    </div>
+    <div class="alert alert-error" style="font-size:13px;margin-bottom:14px;">
+      ⚠️ <strong>This is the #1 reason data does not sync.</strong> Firestore "test mode" rules expire after 30 days and block all reads/writes. You must update the rules to allow access permanently.
+    </div>
+    <div style="font-size:13px;color:var(--text2);margin-bottom:12px;line-height:1.7">
+      Do this <strong>one time</strong> in Firebase Console:
+    </div>
+    <div class="setup-step">
+      <div class="setup-num">1</div>
+      <div class="setup-body">
+        <div class="setup-title">Open Firestore Rules</div>
+        <div class="setup-desc">Go to <a href="https://console.firebase.google.com" target="_blank" style="color:var(--gold)">console.firebase.google.com</a> → Your project (JobTracker) → Left sidebar → <strong>Firestore Database</strong> → Click the <strong>Rules</strong> tab at the top</div>
+      </div>
+    </div>
+    <div class="setup-step">
+      <div class="setup-num">2</div>
+      <div class="setup-body">
+        <div class="setup-title">Replace ALL the existing rules with this</div>
+        <div class="setup-desc">Select all existing text in the rules editor and replace with:</div>
+        <div style="background:var(--surface3);border-radius:8px;padding:14px;margin-top:8px;font-family:monospace;font-size:13px;color:var(--gold3);line-height:1.9;border:1px solid var(--border2)">
+          rules_version = '2';<br>
+          service cloud.firestore {<br>
+          &nbsp;&nbsp;match /databases/{database}/documents {<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;match /{document=**} {<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;allow read, write: if true;<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;}<br>
+          &nbsp;&nbsp;}<br>
+          }
+        </div>
+        <button onclick="copyRules()" class="btn btn-secondary btn-sm" style="margin-top:10px">📋 Copy Rules</button>
+      </div>
+    </div>
+    <div class="setup-step">
+      <div class="setup-num">3</div>
+      <div class="setup-body">
+        <div class="setup-title">Click Publish</div>
+        <div class="setup-desc">Click the blue <strong>Publish</strong> button in Firebase. Rules take effect within 60 seconds. Then come back here and click <strong>Push Local Data to Cloud</strong>.</div>
+      </div>
+    </div>
+    <div class="alert alert-info" style="font-size:12px;margin-top:4px">
+      💡 <code>allow read, write: if true</code> means only people who have your Firebase config (stored in your private config file) can access the data. This is safe for personal use.
+    </div>
   </div>
 
   <!-- DATA MANAGEMENT -->
@@ -856,115 +924,171 @@ let db=null;
 let fbConnected=false;
 
 // ============================================================
-// FIREBASE — FIXED INIT + REALTIME SYNC
+// FIREBASE — ROBUST INIT + REALTIME SYNC
 // ============================================================
+let listenersAttached = false;
+let fbInitialised = false;
+
 function initFirebase(){
-  if(!fbConfig.apiKey||!fbConfig.projectId)return;
+  if(!fbConfig||!fbConfig.apiKey||!fbConfig.projectId){
+    showMsg('fbMsg','No Firebase config found. Import your config file first.','error');
+    return;
+  }
   try{
-    if(firebase.apps.length){
-      // App already exists — just get firestore
-      db=firebase.app().firestore();
-    } else {
-      firebase.initializeApp(fbConfig);
-      db=firebase.firestore();
+    if(!fbInitialised){
+      if(!firebase.apps.length){
+        firebase.initializeApp(fbConfig);
+      }
+      fbInitialised = true;
     }
-    fbConnected=true;
+    db = firebase.firestore();
+    // Enable offline persistence so data is cached locally
+    db.enablePersistence({synchronizeTabs:true}).catch(e=>{
+      if(e.code==='failed-precondition'){
+        // Multiple tabs open — persistence only in one
+        console.warn('Persistence failed (multiple tabs):', e.code);
+      } else if(e.code==='unimplemented'){
+        console.warn('Persistence not supported in this browser');
+      }
+    });
+    fbConnected = true;
     updateFbStatus(true);
-    attachRealtimeListeners();
+    if(!listenersAttached) attachRealtimeListeners();
+    showMsg('fbMsg','\u2705 Firebase connected! Live sync active across all devices.','success');
   }catch(e){
-    console.error('Firebase init error:',e);
-    fbConnected=false;
+    console.error('Firebase init error:', e);
+    fbConnected = false;
     updateFbStatus(false);
-    showMsg('fbMsg','Firebase error: '+e.message,'error');
+    showMsg('fbMsg','\u274c Firebase error: '+e.message,'error');
   }
 }
 
-// REALTIME LISTENERS — push/pull happens automatically, no manual sync needed
-let listenersAttached=false;
+// Realtime listeners — every change on any device instantly updates all others
 function attachRealtimeListeners(){
-  if(!db||listenersAttached)return;
-  listenersAttached=true;
-  const colMap={
-    'contacts': (d)=>{ contacts=d; LS.set('jt2_contacts',d); renderContacts(); populateDropdowns(); showSyncPing(); },
-    'jobs':     (d)=>{ jobs=d;     LS.set('jt2_jobs',d);     renderJobs(); renderDashboard(); showSyncPing(); },
-    'templates':(d)=>{ templates=d;LS.set('jt2_templates',d);renderTemplates(); },
-    'sent':     (d)=>{ sentLog=d;  LS.set('jt2_sent',d);     renderSentLog(); },
-    'goals':    (d)=>{ goals=d;    LS.set('jt2_goals',d);    renderGoals(); renderDashboard(); },
-    'journal':  (d)=>{ journal=d;  LS.set('jt2_journal',d);  renderJournal(); },
+  if(!db) return;
+  listenersAttached = true;
+
+  const handlers = {
+    contacts:(d)=>{ contacts=d; LS.set('jt2_contacts',d); renderContacts(); populateDropdowns(); showSyncPing(); },
+    jobs:    (d)=>{ jobs=d;     LS.set('jt2_jobs',d);     renderJobs();    renderDashboard();  showSyncPing(); },
+    templates:(d)=>{ templates=d;LS.set('jt2_templates',d);renderTemplates(); },
+    sent:    (d)=>{ sentLog=d;  LS.set('jt2_sent',d);     renderSentLog(); },
+    goals:   (d)=>{ goals=d;    LS.set('jt2_goals',d);    renderGoals();   renderDashboard();  },
+    journal: (d)=>{ journal=d;  LS.set('jt2_journal',d);  renderJournal(); },
   };
-  Object.entries(colMap).forEach(([col,handler])=>{
-    db.collection(col).onSnapshot(snap=>{
-      const data=snap.docs.map(d=>({id:d.id,...d.data()}));
-      handler(data);
-    }, err=>console.error('Listener ['+col+']:',err));
+
+  Object.entries(handlers).forEach(([col, handler])=>{
+    db.collection(col).onSnapshot(
+      {includeMetadataChanges: false},
+      snap => {
+        const data = snap.docs.map(d => ({...d.data(), id:d.id}));
+        handler(data);
+      },
+      err => {
+        console.error('Listener error ['+col+']:', err.code, err.message);
+        if(err.code==='permission-denied'){
+          showMsg('fbMsg','\u26a0\ufe0f Firestore permission denied. Please fix Firestore Rules (see below).','error');
+          fbConnected = false;
+          updateFbStatus(false);
+        }
+      }
+    );
   });
-  setTimeout(()=>showMsg('fbMsg','\u2705 Live sync active \u2014 changes sync instantly across all devices!','success'),500);
 }
 
 function showSyncPing(){
-  const p=document.getElementById('fbPill');
-  if(!p)return;
-  p.style.boxShadow='0 0 0 4px rgba(52,211,153,0.35)';
-  setTimeout(()=>p.style.boxShadow='',900);
+  const p = document.getElementById('fbPill');
+  if(p){ p.style.boxShadow='0 0 0 5px rgba(52,211,153,0.4)'; setTimeout(()=>p.style.boxShadow='',1000); }
 }
 
+// Save a single document — called after every add/edit
 async function saveToCloud(collection, id, data){
-  if(!db||!fbConnected)return;
+  if(!db||!fbConnected) return;
   try{
-    const clean=JSON.parse(JSON.stringify(data));
-    await db.collection(collection).doc(id).set(clean);
+    const clean = JSON.parse(JSON.stringify(data)); // strip undefined values
+    await db.collection(collection).doc(String(id)).set(clean);
   }catch(e){
-    console.error('Cloud save error ['+collection+']:',e);
+    console.error('saveToCloud error ['+collection+'/'+id+']:', e.code, e.message);
+    if(e.code==='permission-denied'){
+      showMsg('fbMsg','\u26a0\ufe0f Save blocked by Firestore rules. See Settings for fix.','error');
+    }
   }
 }
 
 async function deleteFromCloud(collection, id){
-  if(!db||!fbConnected)return;
-  try{await db.collection(collection).doc(id).delete();}
-  catch(e){console.error('Cloud delete error:',e);}
+  if(!db||!fbConnected) return;
+  try{ await db.collection(collection).doc(String(id)).delete(); }
+  catch(e){ console.error('deleteFromCloud error:', e.message); }
 }
 
+// Manual pull — downloads latest cloud data into this browser
 async function syncFromCloud(){
   if(!db||!fbConnected){
-    showMsg('fbMsg','Firebase not connected. Go to Settings \u2192 Step 1 to connect.','error');
+    showMsg('fbMsg','Firebase not connected. Import config file first.','error');
     return;
   }
+  const btn = document.getElementById('fbSyncBtn');
+  if(btn){ btn.disabled=true; btn.textContent='\ud83d\udd04 Syncing...'; }
   try{
-    showMsg('fbMsg','\ud83d\udd04 Syncing...','info');
-    const cols=['jobs','contacts','templates','sent','goals','journal'];
+    const cols = ['jobs','contacts','templates','sent','goals','journal'];
     for(const col of cols){
-      const snap=await db.collection(col).get();
-      const data=snap.docs.map(d=>({id:d.id,...d.data()}));
-      if(col==='jobs')jobs=data;
-      if(col==='contacts')contacts=data;
-      if(col==='templates')templates=data;
-      if(col==='sent')sentLog=data;
-      if(col==='goals')goals=data;
-      if(col==='journal')journal=data;
-      LS.set('jt2_'+col,data);
+      const snap = await db.collection(col).get();
+      const data = snap.docs.map(d=>({...d.data(), id:d.id}));
+      if(col==='jobs')     { jobs=data;      LS.set('jt2_jobs',data); }
+      if(col==='contacts') { contacts=data;  LS.set('jt2_contacts',data); }
+      if(col==='templates'){ templates=data; LS.set('jt2_templates',data); }
+      if(col==='sent')     { sentLog=data;   LS.set('jt2_sent',data); }
+      if(col==='goals')    { goals=data;     LS.set('jt2_goals',data); }
+      if(col==='journal')  { journal=data;   LS.set('jt2_journal',data); }
     }
     renderAll();
-    showMsg('fbMsg','\u2705 Sync complete!','success');
-  }catch(e){showMsg('fbMsg','Sync failed: '+e.message,'error');}
+    showMsg('fbMsg','\u2705 Sync complete! All data is up to date.','success');
+  }catch(e){
+    showMsg('fbMsg','Sync failed: '+e.message,'error');
+  }
+  if(btn){ btn.disabled=false; btn.textContent='\ud83d\udd04 Sync Now'; }
 }
 
+// One-time migration: push ALL local data from this browser → Firestore
 async function pushLocalToCloud(){
-  if(!db||!fbConnected){showMsg('fbMsg','Connect Firebase first','error');return;}
-  const btn=document.getElementById('pushLocalBtn');
-  if(btn){btn.disabled=true;btn.innerHTML='\u23f3 Uploading...';}
+  if(!db||!fbConnected){
+    showMsg('fbMsg','\u26a0\ufe0f Firebase not connected. Import your config file first.','error');
+    return;
+  }
+  const btn = document.getElementById('pushLocalBtn');
+  if(btn){ btn.disabled=true; btn.innerHTML='\u23f3 Uploading...'; }
+
+  let total=0, errors=0;
   try{
-    const allData={jobs,contacts,templates,sent:sentLog,goals,journal};
-    for(const [col,items] of Object.entries(allData)){
+    const allData = {jobs, contacts, templates, sent:sentLog, goals, journal};
+    for(const [col, items] of Object.entries(allData)){
+      if(!Array.isArray(items)) continue;
       for(const item of items){
-        if(item&&item.id){
-          const clean=JSON.parse(JSON.stringify(item));
-          await db.collection(col).doc(item.id).set(clean);
+        if(!item||!item.id) continue;
+        try{
+          const clean = JSON.parse(JSON.stringify(item));
+          await db.collection(col).doc(String(item.id)).set(clean);
+          total++;
+        }catch(e){
+          errors++;
+          console.error('Push error ['+col+'/'+item.id+']:', e.code, e.message);
+          if(e.code==='permission-denied'){
+            showMsg('fbMsg','\u274c Blocked by Firestore rules! See the red box below for fix instructions.','error');
+            if(btn){ btn.disabled=false; btn.innerHTML='\u2b06\ufe0f Push Local Data to Cloud'; }
+            return;
+          }
         }
       }
     }
-    showMsg('fbMsg','\u2705 All local data pushed to cloud! Visible on all devices now.','success');
-  }catch(e){showMsg('fbMsg','Push failed: '+e.message,'error');}
-  if(btn){btn.disabled=false;btn.innerHTML='\u2b06\ufe0f Push Local Data to Cloud';}
+    if(errors===0){
+      showMsg('fbMsg','\u2705 '+total+' records pushed to cloud! Open any other device — data will appear automatically.','success');
+    } else {
+      showMsg('fbMsg','\u26a0\ufe0f Pushed '+total+' records with '+errors+' errors. Check console.','warn');
+    }
+  }catch(e){
+    showMsg('fbMsg','\u274c Push failed: '+e.message,'error');
+  }
+  if(btn){ btn.disabled=false; btn.innerHTML='\u2b06\ufe0f Push Local Data to Cloud'; }
 }
 
 // ============================================================
@@ -1907,6 +2031,24 @@ function seedTemplates(){
   LS.set('jt2_templates',templates);
 }
 
+
+
+// Copy Firestore rules to clipboard
+function copyRules(){
+  const rules = `rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if true;
+    }
+  }
+}`;
+  navigator.clipboard.writeText(rules).then(()=>{
+    showMsg('fbMsg','\u2705 Rules copied! Now paste in Firebase Console → Firestore → Rules → Publish','success');
+  }).catch(()=>{
+    alert('Rules:\nrules_version = \'2\';\nservice cloud.firestore {\n  match /databases/{database}/documents {\n    match /{document=**} {\n      allow read, write: if true;\n    }\n  }\n}');
+  });
+}
 
 // ============================================================
 // THEME SYSTEM
