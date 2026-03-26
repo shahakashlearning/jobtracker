@@ -532,6 +532,12 @@ body.theme-light .card-gold { background: linear-gradient(135deg,#ffffff 0%,rgba
 <!-- AI TOOLS PAGE -->
 <div class="page" id="page-tools">
 
+  <!-- API KEY STATUS BANNER -->
+  <div id="aiKeyBanner" class="alert alert-warn" style="display:none;margin-bottom:4px">
+    ⚠️ Anthropic API key not set. AI features will not work until you add your key in
+    <a href="#" onclick="nav('settings',document.querySelectorAll('.nav-item')[7])" style="color:var(--gold);font-weight:700">Settings → AI Tools API Key →</a>
+  </div>
+
   <!-- HR EXTRACTOR -->
   <div class="card card-gold">
     <div class="card-header"><div class="card-title"><span class="card-title-icon">🧠</span>Smart HR Extractor</div></div>
@@ -913,6 +919,45 @@ body.theme-light .card-gold { background: linear-gradient(135deg,#ffffff 0%,rgba
     <div class="alert alert-info" style="font-size:12px;margin-top:4px">
       💡 <code>allow read, write: if true</code> means only people who have your Firebase config (stored in your private config file) can access the data. This is safe for personal use.
     </div>
+  </div>
+
+
+  <!-- ANTHROPIC API KEY — required for AI Tools -->
+  <div class="card card-gold">
+    <div class="card-header"><div class="card-title"><span class="card-title-icon">🤖</span>AI Tools — Anthropic API Key</div></div>
+    <div class="alert alert-info" style="font-size:13px">
+      The AI Tools (HR Extractor, Email Writer, Interview Coach) use the Claude AI API. You need a <strong>free</strong> Anthropic API key. It takes 2 minutes to get one.
+    </div>
+    <div style="background:var(--surface2);border-radius:10px;padding:14px;margin-bottom:14px;border:1px solid var(--border)">
+      <div style="font-weight:600;font-size:13px;color:var(--gold2);margin-bottom:10px">How to get your free API key:</div>
+      <div style="display:flex;gap:10px;margin-bottom:8px;font-size:13px;color:var(--text2);align-items:flex-start">
+        <div style="width:22px;height:22px;border-radius:50%;background:var(--gold);color:#0d0f14;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">1</div>
+        <div>Go to <a href="https://console.anthropic.com" target="_blank" style="color:var(--gold)">console.anthropic.com</a> → Sign up (or log in with your Google account)</div>
+      </div>
+      <div style="display:flex;gap:10px;margin-bottom:8px;font-size:13px;color:var(--text2);align-items:flex-start">
+        <div style="width:22px;height:22px;border-radius:50%;background:var(--gold);color:#0d0f14;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">2</div>
+        <div>Left sidebar → <strong>API Keys</strong> → Click <strong>"Create Key"</strong> → Copy the key (starts with <code>sk-ant-</code>)</div>
+      </div>
+      <div style="display:flex;gap:10px;margin-bottom:8px;font-size:13px;color:var(--text2);align-items:flex-start">
+        <div style="width:22px;height:22px;border-radius:50%;background:var(--gold);color:#0d0f14;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">3</div>
+        <div>Paste it below → click <strong>Save API Key</strong> → Done. All AI features will work instantly.</div>
+      </div>
+      <div style="font-size:12px;color:var(--text3);margin-top:8px">💳 New accounts get free credits. After that, cost is approximately ₹0.05 per AI request — very cheap for personal use.</div>
+    </div>
+    <div class="form-group">
+      <label>Anthropic API Key</label>
+      <div style="display:flex;gap:8px">
+        <input type="password" id="anthropicKeyInput" placeholder="sk-ant-api03-..." style="flex:1">
+        <button class="btn btn-secondary btn-sm" onclick="toggleKeyVisibility()" id="keyVisBtn" style="white-space:nowrap;flex-shrink:0">👁 Show</button>
+      </div>
+    </div>
+    <div id="apiKeyStatus" style="font-size:12px;margin-top:4px;margin-bottom:10px;"></div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <button class="btn btn-primary" onclick="saveAnthropicKey()">💾 Save API Key</button>
+      <button class="btn btn-success" onclick="testAnthropicKey()" id="testKeyBtn">🧪 Test Connection</button>
+      <button class="btn btn-danger btn-sm" onclick="clearAnthropicKey()">✕ Remove Key</button>
+    </div>
+    <div id="apiKeyTestResult" style="margin-top:12px;"></div>
   </div>
 
   <!-- DATA MANAGEMENT -->
@@ -1351,6 +1396,7 @@ function init(){
   loadTheme();
   if(!templates.length) seedTemplates();
   initNewFeatures();
+  initApiKeyUI();
   if(clientId) document.getElementById('clientIdInput').value=clientId;
   // Auto-connect Firebase if config is saved
   if(fbConfig && fbConfig.apiKey && fbConfig.projectId){
@@ -1389,6 +1435,7 @@ function nav(id,el){
   if(el)el.classList.add('active');
   if(id==='email')renderEmailPage();
   if(id==='dashboard')renderDashboard();
+  if(id==='tools')updateAIKeyBanner();
 }
 
 // ============================================================
@@ -2040,16 +2087,81 @@ function saveGoal(){
 function renderGoals(){
   const mainGoal=localStorage.getItem('jt2_maingoal');
   if(mainGoal) document.getElementById('goalDisplay').innerHTML=`<div style="font-family:'Playfair Display',serif;font-size:16px;color:var(--gold3);line-height:1.6;padding:12px;background:rgba(201,168,76,0.05);border-radius:8px;border-left:3px solid var(--gold)">"${mainGoal}"</div>`;
-  document.getElementById('goalsList').innerHTML=goals.length?goals.map(g=>`
-    <div class="goal-item">
+  const el = document.getElementById('goalsList');
+  if(!goals.length){
+    el.innerHTML='<div class="empty"><div class="empty-icon">🎯</div><div class="empty-title">No goals yet</div><div>Add your first goal or milestone</div></div>';
+    return;
+  }
+  const catColors={Application:'var(--blue2)',Skill:'var(--purple)',Network:'var(--teal)',Personal:'var(--gold)',Financial:'var(--green)'};
+  el.innerHTML = goals.map((g,i)=>`
+    <div class="goal-item" id="goal-${g.id}" draggable="true"
+      ondragstart="goalDragStart(event,'${g.id}')"
+      ondragover="goalDragOver(event)"
+      ondrop="goalDrop(event,'${g.id}')"
+      ondragend="goalDragEnd(event)"
+      style="cursor:grab;transition:opacity .15s,transform .15s">
+      <div style="display:flex;flex-direction:column;gap:3px;padding:0 4px;opacity:0.45;cursor:grab" title="Drag to reorder">
+        <div style="width:14px;height:2px;background:var(--text3);border-radius:1px"></div>
+        <div style="width:14px;height:2px;background:var(--text3);border-radius:1px"></div>
+        <div style="width:14px;height:2px;background:var(--text3);border-radius:1px"></div>
+      </div>
       <div class="goal-check ${g.done?'done':''}" onclick="toggleGoal('${g.id}')">${g.done?'✓':''}</div>
       <div style="flex:1">
         <div class="goal-text ${g.done?'done':''}">${g.text}</div>
-        <div style="font-size:11px;color:var(--text3);margin-top:2px">${g.category||''} ${g.date?'· Due: '+fmtDate(g.date):''}</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:2px">
+          ${g.category?`<span style="color:${catColors[g.category]||'var(--text3)'};font-weight:600">${g.category}</span>`:''}
+          ${g.date?'· Due: '+fmtDate(g.date):''}
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:3px">
+        <button class="btn btn-secondary btn-sm" style="padding:3px 8px;font-size:11px" onclick="moveGoal('${g.id}',-1)" ${i===0?'disabled':''} title="Move up">▲</button>
+        <button class="btn btn-secondary btn-sm" style="padding:3px 8px;font-size:11px" onclick="moveGoal('${g.id}',1)" ${i===goals.length-1?'disabled':''} title="Move down">▼</button>
       </div>
       <button class="btn btn-danger btn-sm" onclick="deleteGoalItem('${g.id}')">🗑</button>
-    </div>`).join('')
-    :'<div class="empty"><div class="empty-icon">🎯</div><div class="empty-title">No goals yet</div><div>Add your first goal or milestone</div></div>';
+    </div>`).join('');
+}
+
+// ── GOAL REORDERING ──────────────────────────────────────────
+function moveGoal(id, dir){
+  const i = goals.findIndex(g=>g.id===id);
+  if(i<0)return;
+  const newI = i+dir;
+  if(newI<0||newI>=goals.length)return;
+  const tmp=goals[i]; goals[i]=goals[newI]; goals[newI]=tmp;
+  LS.set('jt2_goals',goals);
+  // Persist order to cloud - save each changed item
+  saveToCloud('goals',goals[i].id,goals[i]);
+  saveToCloud('goals',goals[newI].id,goals[newI]);
+  renderGoals(); renderDashboard();
+}
+
+// Drag-to-reorder
+let dragGoalId = null;
+function goalDragStart(e, id){
+  dragGoalId = id;
+  e.dataTransfer.effectAllowed='move';
+  setTimeout(()=>{ const el=document.getElementById('goal-'+id); if(el) el.style.opacity='0.4'; },0);
+}
+function goalDragOver(e){
+  e.preventDefault();
+  e.dataTransfer.dropEffect='move';
+}
+function goalDrop(e, targetId){
+  e.preventDefault();
+  if(!dragGoalId||dragGoalId===targetId)return;
+  const fromI = goals.findIndex(g=>g.id===dragGoalId);
+  const toI   = goals.findIndex(g=>g.id===targetId);
+  if(fromI<0||toI<0)return;
+  const moved = goals.splice(fromI,1)[0];
+  goals.splice(toI,0,moved);
+  LS.set('jt2_goals',goals);
+  // Save reordered items to cloud
+  goals.forEach((g,idx)=>{ g._order=idx; saveToCloud('goals',g.id,g); });
+  renderGoals(); renderDashboard();
+}
+function goalDragEnd(e){
+  dragGoalId=null;
+  document.querySelectorAll('.goal-item').forEach(el=>el.style.opacity='1');
 }
 
 function openAddGoal(){document.getElementById('goalText').value='';document.getElementById('goalEditId').value='';document.getElementById('goalDate').value='';openModal('mGoal');}
@@ -2347,6 +2459,89 @@ service cloud.firestore {
   });
 }
 
+
+// ============================================================
+// ANTHROPIC API KEY MANAGEMENT
+// ============================================================
+function saveAnthropicKey(){
+  const key = document.getElementById('anthropicKeyInput').value.trim();
+  if(!key){ showMsg('apiKeyTestResult','Please enter your API key','error'); return; }
+  if(!key.startsWith('sk-ant-')){ showMsg('apiKeyTestResult','Invalid key format. Anthropic API keys start with sk-ant-','error'); return; }
+  localStorage.setItem('jt2_anthropic_key', key);
+  document.getElementById('apiKeyStatus').innerHTML='<span style="color:var(--green)">✅ API key saved</span>';
+  showMsg('apiKeyTestResult','✅ Key saved! Click "Test Connection" to verify it works.','success');
+  updateAIKeyBanner();
+}
+
+function clearAnthropicKey(){
+  if(!confirm('Remove API key?'))return;
+  localStorage.removeItem('jt2_anthropic_key');
+  document.getElementById('anthropicKeyInput').value='';
+  document.getElementById('apiKeyStatus').innerHTML='<span style="color:var(--red)">❌ API key removed</span>';
+  updateAIKeyBanner();
+}
+
+function toggleKeyVisibility(){
+  const inp = document.getElementById('anthropicKeyInput');
+  const btn = document.getElementById('keyVisBtn');
+  if(inp.type==='password'){ inp.type='text'; btn.textContent='🔒 Hide'; }
+  else { inp.type='password'; btn.textContent='👁 Show'; }
+}
+
+async function testAnthropicKey(){
+  const key = localStorage.getItem('jt2_anthropic_key');
+  if(!key){ showMsg('apiKeyTestResult','No API key saved yet. Enter and save your key first.','error'); return; }
+  const btn = document.getElementById('testKeyBtn');
+  btn.disabled=true; btn.textContent='🧪 Testing...';
+  showMsg('apiKeyTestResult','Testing connection...','info');
+  try{
+    const resp = await fetch(CLAUDE_API, {
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'x-api-key': key,
+        'anthropic-version':'2023-06-01',
+        'anthropic-dangerous-direct-browser-access':'true'
+      },
+      body: JSON.stringify({
+        model:'claude-haiku-4-5',
+        max_tokens:10,
+        messages:[{role:'user',content:'Say OK'}]
+      })
+    });
+    if(resp.ok){
+      showMsg('apiKeyTestResult','✅ Connection successful! All AI features are ready to use.','success');
+      document.getElementById('apiKeyStatus').innerHTML='<span style="color:var(--green)">✅ Connected & verified</span>';
+      updateAIKeyBanner();
+    } else {
+      const err=await resp.json().catch(()=>({}));
+      const msg=err.error?.message||resp.statusText;
+      if(resp.status===401) showMsg('apiKeyTestResult','❌ Invalid API key. Copy it again from console.anthropic.com','error');
+      else showMsg('apiKeyTestResult','❌ Test failed ('+resp.status+'): '+msg,'error');
+    }
+  } catch(e){
+    showMsg('apiKeyTestResult','❌ Network error: '+e.message,'error');
+  }
+  btn.disabled=false; btn.textContent='🧪 Test Connection';
+}
+
+function updateAIKeyBanner(){
+  const banner = document.getElementById('aiKeyBanner');
+  if(!banner)return;
+  const hasKey = !!localStorage.getItem('jt2_anthropic_key');
+  banner.style.display = hasKey ? 'none' : 'flex';
+}
+
+function initApiKeyUI(){
+  const saved = localStorage.getItem('jt2_anthropic_key');
+  const inp = document.getElementById('anthropicKeyInput');
+  if(saved && inp){
+    inp.value = saved;
+    document.getElementById('apiKeyStatus').innerHTML='<span style="color:var(--green)">✅ API key saved</span>';
+  }
+  updateAIKeyBanner();
+}
+
 // ============================================================
 // THEME SYSTEM
 // ============================================================
@@ -2622,21 +2817,43 @@ function confirmSendEmail(){
 // ============================================================
 const CLAUDE_API = 'https://api.anthropic.com/v1/messages';
 
+// Get the stored API key — throws a clear error if missing
+function getAnthropicKey(){
+  const key = localStorage.getItem('jt2_anthropic_key')||'';
+  if(!key) throw new Error('NO_KEY');
+  return key;
+}
+
 async function callClaude(systemPrompt, userContent, isVision=false){
-  const messages = isVision ? [{role:'user', content: userContent}]
-                             : [{role:'user', content: userContent}];
+  let apiKey;
+  try{ apiKey = getAnthropicKey(); }
+  catch(e){
+    throw new Error('Please add your Anthropic API key in Settings → AI Tools API Key before using AI features.');
+  }
+  const messages = [{role:'user', content: isVision ? userContent : userContent}];
   const body = {
-    model: 'claude-sonnet-4-20250514',
-    max_tokens: 1000,
+    model: 'claude-sonnet-4-5',
+    max_tokens: 1500,
     system: systemPrompt,
     messages
   };
   const resp = await fetch(CLAUDE_API, {
     method: 'POST',
-    headers: {'Content-Type':'application/json'},
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true'
+    },
     body: JSON.stringify(body)
   });
-  if(!resp.ok) throw new Error('API error: ' + resp.status);
+  if(!resp.ok){
+    const err = await resp.json().catch(()=>({error:{message:resp.statusText}}));
+    const msg = err.error?.message || resp.statusText;
+    if(resp.status === 401) throw new Error('Invalid API key. Check Settings → AI Tools API Key.');
+    if(resp.status === 429) throw new Error('Rate limit hit. Wait 30 seconds and try again.');
+    throw new Error('API error ' + resp.status + ': ' + msg);
+  }
   const data = await resp.json();
   return data.content?.[0]?.text || '';
 }
