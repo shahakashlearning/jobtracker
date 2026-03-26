@@ -229,6 +229,24 @@ code{background:var(--surface3);border:1px solid var(--border);padding:2px 7px;b
 ::-webkit-scrollbar-thumb{background:var(--surface3);border-radius:3px;}
 ::-webkit-scrollbar-thumb:hover{background:var(--gold);}
 
+
+/* PIN LOCK */
+.pin-overlay{position:fixed;inset:0;background:var(--bg);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;}
+.pin-overlay.hidden{display:none;}
+.pin-logo{font-family:'Playfair Display',serif;font-size:28px;font-weight:700;background:linear-gradient(135deg,var(--gold2),var(--gold3));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.pin-sub{font-size:13px;color:var(--text3);letter-spacing:2px;text-transform:uppercase;}
+.pin-dots{display:flex;gap:14px;margin:10px 0;}
+.pin-dot{width:16px;height:16px;border-radius:50%;border:2px solid var(--border2);transition:all .2s;}
+.pin-dot.filled{background:var(--gold);border-color:var(--gold);}
+.pin-grid{display:grid;grid-template-columns:repeat(3,72px);gap:10px;}
+.pin-btn{width:72px;height:72px;border-radius:50%;background:var(--surface2);border:1px solid var(--border2);color:var(--text);font-size:22px;font-family:'Playfair Display',serif;font-weight:700;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;}
+.pin-btn:hover{background:var(--surface3);border-color:var(--gold);color:var(--gold);}
+.pin-btn:active{transform:scale(0.92);}
+.pin-btn.del{font-size:16px;font-family:inherit;}
+.pin-msg{font-size:13px;color:var(--red);min-height:20px;text-align:center;}
+.pin-setup-note{font-size:12px;color:var(--text3);text-align:center;max-width:260px;line-height:1.6;}
+.pin-link{color:var(--gold);cursor:pointer;text-decoration:underline;}
+
 /* THEME SYSTEM */
 body.theme-light {
   --bg: #f0f2f8;
@@ -259,6 +277,34 @@ body.theme-light .card-gold { background: linear-gradient(135deg,#ffffff 0%,rgba
 </head>
 <body>
 
+
+<!-- PIN LOCK OVERLAY -->
+<div class="pin-overlay" id="pinOverlay">
+  <div class="pin-logo">Job Tracker</div>
+  <div class="pin-sub">Akash Career Suite</div>
+  <div class="pin-dots" id="pinDots">
+    <div class="pin-dot" id="pd0"></div><div class="pin-dot" id="pd1"></div>
+    <div class="pin-dot" id="pd2"></div><div class="pin-dot" id="pd3"></div>
+    <div class="pin-dot" id="pd4"></div><div class="pin-dot" id="pd5"></div>
+  </div>
+  <div class="pin-msg" id="pinMsg"></div>
+  <div class="pin-grid">
+    <button class="pin-btn" onclick="pinKey('1')">1</button>
+    <button class="pin-btn" onclick="pinKey('2')">2</button>
+    <button class="pin-btn" onclick="pinKey('3')">3</button>
+    <button class="pin-btn" onclick="pinKey('4')">4</button>
+    <button class="pin-btn" onclick="pinKey('5')">5</button>
+    <button class="pin-btn" onclick="pinKey('6')">6</button>
+    <button class="pin-btn" onclick="pinKey('7')">7</button>
+    <button class="pin-btn" onclick="pinKey('8')">8</button>
+    <button class="pin-btn" onclick="pinKey('9')">9</button>
+    <button class="pin-btn" onclick="pinKey('')" style="visibility:hidden"></button>
+    <button class="pin-btn" onclick="pinKey('0')">0</button>
+    <button class="pin-btn del" onclick="pinDel()">⌫</button>
+  </div>
+  <div class="pin-setup-note" id="pinNote"></div>
+</div>
+
 <!-- HEADER -->
 <div class="header">
   <div class="logo">
@@ -287,6 +333,7 @@ body.theme-light .card-gold { background: linear-gradient(135deg,#ffffff 0%,rgba
   <div class="nav-item" onclick="nav('email',this)">📧 Send Email</div>
   <div class="nav-item" onclick="nav('templates',this)">📝 Templates</div>
   <div class="nav-item" onclick="nav('resume',this)">📎 My CV</div>
+  <div class="nav-item" onclick="nav('tools',this)">🤖 AI Tools</div>
   <div class="nav-item" onclick="nav('motivation',this)">🌟 Motivation</div>
   <div class="nav-item" onclick="nav('settings',this)">⚙️ Settings</div>
 </div>
@@ -324,18 +371,18 @@ body.theme-light .card-gold { background: linear-gradient(135deg,#ffffff 0%,rgba
       <button class="btn btn-primary btn-sm" onclick="openAddJob()">＋ Add New</button>
     </div>
     <div class="filter-bar">
-      <input type="text" id="jobSearch" placeholder="🔍 Search company, role..." oninput="renderJobs()">
-      <select id="jobStatusFilter" onchange="renderJobs()">
+      <input type="text" id="jobSearch" placeholder="🔍 Search company, role..." oninput="renderJobs(true)">
+      <select id="jobStatusFilter" onchange="renderJobs(true)">
         <option value="">All Statuses</option>
         <option>Saved</option><option>Applied</option><option>Screening</option>
         <option>Interview</option><option>Offer</option><option>Rejected</option>
       </select>
-      <select id="jobPlatformFilter" onchange="renderJobs()">
+      <select id="jobPlatformFilter" onchange="renderJobs(true)">
         <option value="">All Platforms</option>
         <option>LinkedIn</option><option>Naukri</option><option>Indeed</option>
         <option>Company Site</option><option>Referral</option><option>Other</option>
       </select>
-      <select id="jobPriorityFilter" onchange="renderJobs()">
+      <select id="jobPriorityFilter" onchange="renderJobs(true)">
         <option value="">All Priorities</option>
         <option>High</option><option>Medium</option><option>Low</option>
       </select>
@@ -349,6 +396,7 @@ body.theme-light .card-gold { background: linear-gradient(135deg,#ffffff 0%,rgba
         <tbody id="jobTableBody"></tbody>
       </table>
     </div>
+    <div id="jobsPagination"></div>
   </div>
 </div>
 
@@ -396,7 +444,8 @@ body.theme-light .card-gold { background: linear-gradient(135deg,#ffffff 0%,rgba
     <div class="form-group"><label>Message Body</label><textarea id="emailBody" rows="10"></textarea></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
       <div class="form-group">
-        <label>📎 Attach CV <span style="color:var(--text3);font-size:10px;text-transform:none;letter-spacing:0">(auto-attached if uploaded)</span></label>
+        <label>📎 CV Version to attach</label>
+        <select id="emailCVSelect" style="margin-bottom:4px"></select>
         <div id="cvAttachInfo" style="font-size:12px;color:var(--text2);margin-top:4px;"></div>
       </div>
       <div class="form-group">
@@ -410,7 +459,7 @@ body.theme-light .card-gold { background: linear-gradient(135deg,#ffffff 0%,rgba
       <select id="emailJobLink"><option value="">— Optional: link to a job —</option></select>
     </div>
     <div style="display:flex;gap:10px;flex-wrap:wrap;">
-      <button class="btn btn-primary" onclick="sendEmail()" id="sendBtn">📤 Send Email</button>
+      <button class="btn btn-primary" onclick="confirmSendEmail()" id="sendBtn">📤 Send Email</button>
       <button class="btn btn-secondary" onclick="previewEmail()">👁 Preview</button>
       <button class="btn btn-secondary" onclick="saveDraft()">💾 Save Draft</button>
     </div>
@@ -440,15 +489,14 @@ body.theme-light .card-gold { background: linear-gradient(135deg,#ffffff 0%,rgba
 <!-- RESUME -->
 <div class="page" id="page-resume">
   <div class="card card-gold">
-    <div class="card-header"><div class="card-title"><span class="card-title-icon">📎</span>My CV / Resume</div></div>
-    <div class="alert alert-info">Your CV is stored locally in your browser and attached automatically to all emails.</div>
-    <div class="upload-zone" id="cvZone" onclick="document.getElementById('cvInput').click()">
-      <div style="font-size:40px;margin-bottom:10px">📄</div>
-      <div id="cvZoneText" style="font-weight:600;font-size:15px">Click to upload your CV (PDF)</div>
-      <div style="font-size:11px;color:var(--text3);margin-top:5px">PDF recommended · Max 5MB</div>
+    <div class="card-header">
+      <div class="card-title"><span class="card-title-icon">📎</span>My CV Versions</div>
+      <button class="btn btn-primary btn-sm" onclick="document.getElementById('cvAddInput').click()">＋ Add CV Version</button>
     </div>
-    <input type="file" id="cvInput" accept=".pdf,.doc,.docx" style="display:none" onchange="handleCVUpload(event)">
-    <div id="cvStatus" style="margin-top:12px;"></div>
+    <div class="alert alert-info" style="font-size:12px">Store multiple CV versions (e.g. ADAS-focused, NVH-focused, General). Select which one to attach when sending emails.</div>
+    <input type="file" id="cvAddInput" accept=".pdf,.doc,.docx" style="display:none" onchange="handleCVAdd(event)">
+    <div id="cvVersionList" style="margin-top:8px;"></div>
+    <div class="alert alert-warn" id="cvNoneWarn" style="font-size:12px;display:none">No CV uploaded yet. Click "+ Add CV Version" above.</div>
   </div>
   <div class="card card-gold">
     <div class="card-header"><div class="card-title"><span class="card-title-icon">📄</span>Cover Letter (Default)</div></div>
@@ -480,6 +528,104 @@ body.theme-light .card-gold { background: linear-gradient(135deg,#ffffff 0%,rgba
     <span id="pSaved" style="margin-left:10px;color:var(--green);font-size:12px;display:none;">✓ Saved!</span>
   </div>
 </div>
+
+<!-- AI TOOLS PAGE -->
+<div class="page" id="page-tools">
+
+  <!-- HR EXTRACTOR -->
+  <div class="card card-gold">
+    <div class="card-header"><div class="card-title"><span class="card-title-icon">🧠</span>Smart HR Extractor</div></div>
+    <div class="alert alert-info" style="font-size:12px">Paste a LinkedIn post or job description and AI will automatically extract HR contact details for you.</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+      <div class="form-group" style="margin:0">
+        <label>Option A — Paste post text</label>
+        <textarea id="hrExtractText" rows="7" placeholder="Paste the LinkedIn post, job description, or any text containing HR details here...&#10;&#10;Example:&#10;Hi! We are hiring for Tata Motors. Contact Priya Sharma at priya.sharma@tatamotors.com or call +91 98765 43210. Apply now!"></textarea>
+      </div>
+      <div class="form-group" style="margin:0">
+        <label>Option B — Upload screenshot</label>
+        <div class="upload-zone" id="hrImgZone" onclick="document.getElementById('hrImgInput').click()" style="height:158px;display:flex;flex-direction:column;align-items:center;justify-content:center">
+          <div style="font-size:28px;margin-bottom:6px">📸</div>
+          <div id="hrImgZoneText" style="font-weight:600;font-size:13px">Click to upload screenshot</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:3px">PNG, JPG · Max 3MB</div>
+        </div>
+        <input type="file" id="hrImgInput" accept="image/*" style="display:none" onchange="handleHRImage(event)">
+        <div id="hrImgStatus" style="margin-top:6px;font-size:12px;"></div>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px">
+      <button class="btn btn-primary" onclick="extractHRDetails()" id="extractBtn">🧠 Extract HR Details</button>
+      <button class="btn btn-secondary" onclick="clearExtractor()">🗑 Clear</button>
+    </div>
+    <div id="extractResult"></div>
+  </div>
+
+  <!-- AI EMAIL WRITER -->
+  <div class="card card-gold">
+    <div class="card-header"><div class="card-title"><span class="card-title-icon">✍️</span>AI Email Writer</div></div>
+    <div class="alert alert-info" style="font-size:12px">Describe the job and your highlights — AI writes a personalised application email ready to send.</div>
+    <div class="form-row">
+      <div class="form-group"><label>Company</label><input type="text" id="aiCompany" placeholder="Tata Motors"></div>
+      <div class="form-group"><label>Role</label><input type="text" id="aiRole" placeholder="Senior Engineer – Vehicle Dynamics"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Email type</label>
+        <select id="aiEmailType">
+          <option value="application">Initial Application</option>
+          <option value="followup">Follow-up (1 week later)</option>
+          <option value="thankyou">Thank You After Interview</option>
+          <option value="referral">Via Referral</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Tone</label>
+        <select id="aiTone">
+          <option value="professional">Professional</option>
+          <option value="confident">Confident & Bold</option>
+          <option value="warm">Warm & Friendly</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group"><label>Key highlights to mention (optional)</label>
+      <input type="text" id="aiHighlights" placeholder="e.g. Led NVH reduction project saving 15%, certified in ADAS testing...">
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px">
+      <button class="btn btn-primary" onclick="generateEmail()" id="genEmailBtn">✍️ Generate Email</button>
+    </div>
+    <div id="aiEmailResult"></div>
+  </div>
+
+  <!-- INTERVIEW PREP COACH -->
+  <div class="card card-gold">
+    <div class="card-header"><div class="card-title"><span class="card-title-icon">🎤</span>Interview Prep Coach</div></div>
+    <div class="alert alert-info" style="font-size:12px">Enter the role and company — AI generates likely interview questions with suggested answers based on your 8+ years automotive experience.</div>
+    <div class="form-row">
+      <div class="form-group"><label>Company</label><input type="text" id="prepCompany" placeholder="Mahindra, Bosch, Tata Motors..."></div>
+      <div class="form-group"><label>Role</label><input type="text" id="prepRole" placeholder="Quality Manager, ADAS Engineer..."></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Interview type</label>
+        <select id="prepType">
+          <option value="technical">Technical Round</option>
+          <option value="hr">HR / Behavioural</option>
+          <option value="managerial">Managerial Round</option>
+          <option value="all">All Rounds Combined</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Number of questions</label>
+        <select id="prepCount">
+          <option value="5">5 questions</option>
+          <option value="10" selected>10 questions</option>
+          <option value="15">15 questions</option>
+        </select>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px">
+      <button class="btn btn-primary" onclick="generateInterviewPrep()" id="prepBtn">🎤 Generate Questions</button>
+    </div>
+    <div id="prepResult"></div>
+  </div>
+
+</div>
+
 
 <!-- MOTIVATION -->
 <div class="page" id="page-motivation">
@@ -654,6 +800,7 @@ body.theme-light .card-gold { background: linear-gradient(135deg,#ffffff 0%,rgba
     <div style="display:flex;gap:10px;flex-wrap:wrap;">
       <button class="btn btn-primary" onclick="saveFirebaseConfig()" id="fbConnectBtn">🔥 Connect Firebase</button>
       <button class="btn btn-success" onclick="syncFromCloud()" id="fbSyncBtn">🔄 Sync Now</button>
+      <span style="font-size:12px;color:var(--text3);align-self:center">Last sync: <span id="lastSyncTime">—</span></span>
       <button class="btn btn-blue" onclick="pushLocalToCloud()" id="pushLocalBtn">⬆️ Push Local Data to Cloud</button>
       <button class="btn btn-danger btn-sm" onclick="disconnectFirebase()">✕ Disconnect</button>
     </div>
@@ -1121,11 +1268,25 @@ async function syncFromCloud(){
       if(col==='journal')   journal=data;
     }
     renderAll();
-    fbShowMsg('✅ Sync complete — all data is up to date.', 'success');
+    const now=new Date();
+    const timeStr=now.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+    localStorage.setItem('jt2_lastSync',now.toISOString());
+    updateLastSyncUI();
+    fbShowMsg('✅ Sync complete at '+timeStr+' — all data is up to date.', 'success');
   } catch(e){
     fbShowMsg('Sync failed: ' + e.message, 'error');
   }
   if(btn){ btn.disabled=false; btn.textContent='🔄 Sync Now'; }
+}
+
+function updateLastSyncUI(){
+  const el=document.getElementById('lastSyncTime');
+  if(!el)return;
+  const saved=localStorage.getItem('jt2_lastSync');
+  if(!saved){el.textContent='Never synced';return;}
+  const d=new Date(saved);
+  const diff=Math.round((Date.now()-d.getTime())/60000);
+  el.textContent=diff<1?'Just now':diff<60?diff+'m ago':d.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
 }
 
 // ── PUSH (migrate local → cloud, one-time) ──────────────────
@@ -1189,6 +1350,7 @@ function fbShowMsg(msg, type){ showMsg('fbMsg', msg, type); }
 function init(){
   loadTheme();
   if(!templates.length) seedTemplates();
+  initNewFeatures();
   if(clientId) document.getElementById('clientIdInput').value=clientId;
   // Auto-connect Firebase if config is saved
   if(fbConfig && fbConfig.apiKey && fbConfig.projectId){
@@ -1307,7 +1469,11 @@ function getAvgDays(){
 // ============================================================
 // JOBS
 // ============================================================
-function renderJobs(){
+const JOBS_PER_PAGE = 15;
+let jobsPage = 1;
+
+function renderJobs(resetPage=false){
+  if(resetPage) jobsPage=1;
   const q=(document.getElementById('jobSearch')?.value||'').toLowerCase();
   const sf=document.getElementById('jobStatusFilter')?.value||'';
   const pf=document.getElementById('jobPlatformFilter')?.value||'';
@@ -1317,7 +1483,22 @@ function renderJobs(){
     (!sf||j.status===sf)&&(!pf||j.platform===pf)&&(!prf||j.priority===prf)
   );
   document.getElementById('jobBadge').textContent=jobs.length;
-  document.getElementById('jobTableBody').innerHTML=filtered.length?filtered.map(j=>`
+  const totalPages=Math.max(1,Math.ceil(filtered.length/JOBS_PER_PAGE));
+  jobsPage=Math.min(jobsPage,totalPages);
+  const start=(jobsPage-1)*JOBS_PER_PAGE;
+  const paged=filtered.slice(start,start+JOBS_PER_PAGE);
+  // Pagination controls
+  const pgEl=document.getElementById('jobsPagination');
+  if(pgEl){
+    if(filtered.length>JOBS_PER_PAGE){
+      pgEl.innerHTML=`<div style="display:flex;align-items:center;gap:10px;padding:12px 0;font-size:13px;color:var(--text2)">
+        <button class="btn btn-secondary btn-sm" onclick="jobsPage--;renderJobs()" ${jobsPage<=1?'disabled':''}>‹ Prev</button>
+        <span>Page ${jobsPage} of ${totalPages} &nbsp;·&nbsp; ${filtered.length} total</span>
+        <button class="btn btn-secondary btn-sm" onclick="jobsPage++;renderJobs()" ${jobsPage>=totalPages?'disabled':''}>Next ›</button>
+      </div>`;
+    } else { pgEl.innerHTML=''; }
+  }
+  document.getElementById('jobTableBody').innerHTML=paged.length?paged.map(j=>`
     <tr>
       <td><div style="font-weight:600">${j.company}</div>${j.location?`<div style="font-size:11px;color:var(--text3)">${j.location}</div>`:''}</td>
       <td style="max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${j.role}</td>
@@ -1371,6 +1552,14 @@ async function saveJob(){
   const ro=document.getElementById('jRole').value.trim();
   if(!co||!ro){alert('Company and Role are required');return;}
   const id=document.getElementById('jEditId').value;
+  // Duplicate detection — only for new entries (not edits)
+  if(!id){
+    const dup=jobs.find(j=>j.company.toLowerCase()===co.toLowerCase()&&j.role.toLowerCase()===ro.toLowerCase());
+    if(dup){
+      const proceed=confirm(`⚠️ Duplicate detected!\n\nYou already have an application for:\n${co} — ${ro}\nStatus: ${dup.status}\n\nAdd anyway?`);
+      if(!proceed)return;
+    }
+  }
   const data={
     id:id||uid(),company:co,role:ro,
     platform:document.getElementById('jPlatform').value,
@@ -1541,7 +1730,14 @@ function renderEmailPage(){
   sel.innerHTML='<option value="">— Select HR Contact —</option>'+contacts.map(c=>`<option value="${c.id}">${c.name} (${c.company})</option>`).join('');
   const jsel=document.getElementById('emailJobLink');
   jsel.innerHTML='<option value="">— Optional: link to a job —</option>'+jobs.map(j=>`<option value="${j.id}">${j.company} – ${j.role}</option>`).join('');
-  document.getElementById('cvAttachInfo').innerHTML=cvData?`<span style="color:var(--green)">✅ ${cvName} will be attached</span>`:`<span style="color:var(--text3)">No CV uploaded yet. <a href="#" onclick="nav('resume',null)" style="color:var(--gold)">Upload →</a></span>`;
+  // CV version selector
+  const cvSel = document.getElementById('emailCVSelect');
+  if(cvSel && cvVersions.length){
+    cvSel.innerHTML = cvVersions.map(v=>`<option value="${v.id}" ${v.isDefault?'selected':''}>${v.label}</option>`).join('');
+    document.getElementById('cvAttachInfo').innerHTML=`<span style="color:var(--green)">✅ Will attach selected CV</span>`;
+  } else if(!cvSel) {
+    document.getElementById('cvAttachInfo').innerHTML=cvData?`<span style="color:var(--green)">✅ ${cvName} will be attached</span>`:`<span style="color:var(--text3)">No CV uploaded yet. <a href="#" onclick="nav('resume',null)" style="color:var(--gold)">Upload →</a></span>`;
+  }
   if(clDefaultData&&!clData) document.getElementById('clStatus').innerHTML=`<span class="cl-chip">📄 Default: ${clDefaultName}</span>`;
   renderSentLog();
 }
@@ -1577,6 +1773,9 @@ function handleCLUpload(event){
   const reader=new FileReader();
   reader.onload=e=>{
     clData=e.target.result.split(',')[1];clName=file.name;
+    // Persist so it survives page refresh
+    localStorage.setItem('jt2_cl',clData);
+    localStorage.setItem('jt2_clname',clName);
     document.getElementById('clStatus').innerHTML=`<span class="cl-chip">📄 ${file.name}</span>`;
   };
   reader.readAsDataURL(file);
@@ -1609,7 +1808,10 @@ async function sendEmail(){
   try{
     const attachCL=clData||clDefaultData;
     const attachCLName=clName||clDefaultName;
-    const raw=cvData?buildEmailMultipart(to,subject,body,cvData,cvName,attachCL,attachCLName):buildSimpleEmail(to,subject,body);
+    const selCV=getSelectedCV();
+    const useCVData=selCV?selCV.data:cvData;
+    const useCVName=selCV?selCV.name:cvName;
+    const raw=useCVData?buildEmailMultipart(to,subject,body,useCVData,useCVName,attachCL,attachCLName):buildSimpleEmail(to,subject,body);
     const resp=await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send',{
       method:'POST',
       headers:{'Authorization':'Bearer '+gmailToken,'Content-Type':'application/json'},
@@ -2162,6 +2364,476 @@ function loadTheme(){
     const btn=document.getElementById('themeToggleBtn');
     if(btn)btn.innerHTML='🌙 Dark';
   }
+}
+
+
+// ============================================================
+// PIN LOCK SYSTEM
+// ============================================================
+let pinBuffer = '';
+let pinLocked = true;
+let pinAutoLockTimer = null;
+const PIN_AUTO_LOCK_MS = 5 * 60 * 1000; // 5 minutes
+
+function pinHash(pin){ // Simple hash — not cryptographic but sufficient for local PIN
+  let h = 0;
+  for(let i=0;i<pin.length;i++){ h=((h<<5)-h)+pin.charCodeAt(i); h|=0; }
+  return h.toString(16);
+}
+
+function initPin(){
+  const stored = localStorage.getItem('jt2_pin');
+  const overlay = document.getElementById('pinOverlay');
+  const note = document.getElementById('pinNote');
+  if(!stored){
+    // First time — setup mode
+    note.innerHTML = '🔐 Set your 6-digit PIN to protect your data.<br><span class="pin-link" onclick="skipPin()">Skip for now</span>';
+    overlay.setAttribute('data-mode','setup');
+    overlay.setAttribute('data-step','1');
+  } else {
+    note.innerHTML = '<span class="pin-link" onclick="forgotPin()">Forgot PIN? Reset data</span>';
+    overlay.setAttribute('data-mode','verify');
+  }
+  resetAutoLock();
+}
+
+function pinKey(digit){
+  if(pinBuffer.length >= 6) return;
+  pinBuffer += digit;
+  updatePinDots();
+  if(pinBuffer.length === 6) setTimeout(processPIN, 150);
+}
+
+function pinDel(){
+  pinBuffer = pinBuffer.slice(0,-1);
+  updatePinDots();
+}
+
+function updatePinDots(){
+  for(let i=0;i<6;i++){
+    const d = document.getElementById('pd'+i);
+    if(d) d.className = 'pin-dot' + (i < pinBuffer.length ? ' filled' : '');
+  }
+}
+
+function processPIN(){
+  const overlay = document.getElementById('pinOverlay');
+  const mode = overlay.getAttribute('data-mode');
+  const step = overlay.getAttribute('data-step');
+  const msg  = document.getElementById('pinMsg');
+  const note = document.getElementById('pinNote');
+
+  if(mode === 'verify'){
+    const stored = localStorage.getItem('jt2_pin');
+    if(pinHash(pinBuffer) === stored){
+      overlay.classList.add('hidden');
+      pinLocked = false;
+      resetAutoLock();
+      msg.textContent = '';
+    } else {
+      msg.textContent = '❌ Wrong PIN. Try again.';
+      pinBuffer=''; updatePinDots();
+    }
+    return;
+  }
+
+  // Setup mode
+  if(step === '1'){
+    if(pinBuffer.length === 6){
+      overlay.setAttribute('data-temp', pinBuffer);
+      overlay.setAttribute('data-step','2');
+      pinBuffer=''; updatePinDots();
+      msg.textContent = '';
+      note.innerHTML = '✅ Good! Enter the same PIN again to confirm.';
+    }
+  } else if(step === '2'){
+    const first = overlay.getAttribute('data-temp');
+    if(pinBuffer === first){
+      localStorage.setItem('jt2_pin', pinHash(pinBuffer));
+      overlay.classList.add('hidden');
+      pinLocked = false;
+      resetAutoLock();
+      msg.textContent = '';
+      note.innerHTML = '';
+    } else {
+      msg.textContent = '❌ PINs do not match. Start again.';
+      overlay.setAttribute('data-step','1');
+      overlay.removeAttribute('data-temp');
+      note.innerHTML = '🔐 Set your 6-digit PIN to protect your data.<br><span class="pin-link" onclick="skipPin()">Skip for now</span>';
+      pinBuffer=''; updatePinDots();
+    }
+  }
+}
+
+function skipPin(){
+  document.getElementById('pinOverlay').classList.add('hidden');
+  pinLocked = false;
+}
+
+function forgotPin(){
+  if(confirm('Reset PIN? This will clear your PIN. Your data stays intact.')){
+    localStorage.removeItem('jt2_pin');
+    location.reload();
+  }
+}
+
+function lockApp(){
+  pinBuffer = '';
+  updatePinDots();
+  document.getElementById('pinMsg').textContent = '';
+  const stored = localStorage.getItem('jt2_pin');
+  const note = document.getElementById('pinNote');
+  if(stored){
+    document.getElementById('pinOverlay').setAttribute('data-mode','verify');
+    note.innerHTML = '<span class="pin-link" onclick="forgotPin()">Forgot PIN? Reset</span>';
+  }
+  document.getElementById('pinOverlay').classList.remove('hidden');
+  pinLocked = true;
+}
+
+function resetAutoLock(){
+  clearTimeout(pinAutoLockTimer);
+  if(localStorage.getItem('jt2_pin')){
+    pinAutoLockTimer = setTimeout(()=>{ if(!pinLocked) lockApp(); }, PIN_AUTO_LOCK_MS);
+  }
+}
+
+// Reset auto-lock on any user interaction
+['click','keydown','touchstart'].forEach(ev=>{
+  document.addEventListener(ev, resetAutoLock, {passive:true});
+});
+
+// PIN settings UI helpers
+function changePinFlow(){
+  const stored = localStorage.getItem('jt2_pin');
+  if(!stored){ alert('No PIN set yet. Use the lock screen to set one.'); return; }
+  const overlay = document.getElementById('pinOverlay');
+  const note = document.getElementById('pinNote');
+  overlay.setAttribute('data-mode','change_verify');
+  overlay.setAttribute('data-step','1');
+  note.innerHTML = 'Enter your current PIN to change it.';
+  overlay.classList.remove('hidden');
+}
+
+// ============================================================
+// MULTIPLE CV VERSIONS
+// ============================================================
+// cvVersions: [{id, name, label, data, isDefault, added}]
+let cvVersions = LS.get('jt2_cvversions', []);
+
+function handleCVAdd(event){
+  const file = event.target.files[0]; if(!file)return;
+  if(file.size > 5*1024*1024){ alert('File too large (max 5MB)'); return; }
+  const label = prompt('Label for this CV version:', file.name.replace(/\.[^.]+$/,'')) || file.name;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const entry = {
+      id: uid(), name: file.name, label,
+      data: e.target.result.split(',')[1],
+      isDefault: cvVersions.length === 0, // first one auto-default
+      added: new Date().toISOString()
+    };
+    cvVersions.push(entry);
+    LS.set('jt2_cvversions', cvVersions);
+    // Keep legacy cvData pointing to default for backward compat
+    syncDefaultCV();
+    renderCVVersions();
+  };
+  reader.readAsDataURL(file);
+  event.target.value = '';
+}
+
+function syncDefaultCV(){
+  const def = cvVersions.find(v=>v.isDefault) || cvVersions[0];
+  if(def){
+    cvData = def.data; cvName = def.name;
+    localStorage.setItem('jt2_cv', def.data);
+    localStorage.setItem('jt2_cvname', def.name);
+  }
+}
+
+function setDefaultCV(id){
+  cvVersions.forEach(v => v.isDefault = (v.id === id));
+  LS.set('jt2_cvversions', cvVersions);
+  syncDefaultCV();
+  renderCVVersions();
+}
+
+function deleteCVVersion(id){
+  if(!confirm('Delete this CV version?'))return;
+  cvVersions = cvVersions.filter(v=>v.id!==id);
+  if(cvVersions.length && !cvVersions.find(v=>v.isDefault)) cvVersions[0].isDefault=true;
+  LS.set('jt2_cvversions', cvVersions);
+  syncDefaultCV();
+  renderCVVersions();
+}
+
+function renderCVVersions(){
+  const el = document.getElementById('cvVersionList');
+  const warn = document.getElementById('cvNoneWarn');
+  if(!el)return;
+  if(!cvVersions.length){
+    el.innerHTML=''; if(warn) warn.style.display='flex'; return;
+  }
+  if(warn) warn.style.display='none';
+  el.innerHTML = cvVersions.map(v=>`
+    <div style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--surface2);border:1px solid ${v.isDefault?'rgba(201,168,76,0.4)':'var(--border)'};border-radius:10px;margin-bottom:8px;">
+      <div style="font-size:22px">📄</div>
+      <div style="flex:1">
+        <div style="font-weight:600;font-size:13px">${v.label}</div>
+        <div style="font-size:11px;color:var(--text3)">${v.name} · Added ${fmtDate(v.added)}</div>
+      </div>
+      ${v.isDefault?'<span style="background:rgba(201,168,76,0.15);color:var(--gold);border:1px solid rgba(201,168,76,0.3);padding:2px 10px;border-radius:10px;font-size:11px;font-weight:700">DEFAULT</span>':'<button class="btn btn-secondary btn-sm" onclick="setDefaultCV(\''+v.id+'\')">Set Default</button>'}
+      <button class="btn btn-danger btn-sm" onclick="deleteCVVersion('${v.id}')">🗑</button>
+    </div>`).join('');
+  // Update email page CV attach selector
+  updateCVSelector();
+}
+
+function updateCVSelector(){
+  const sel = document.getElementById('emailCVSelect');
+  if(!sel)return;
+  sel.innerHTML = cvVersions.map(v=>`<option value="${v.id}" ${v.isDefault?'selected':''}>${v.label}</option>`).join('');
+}
+
+function getSelectedCV(){
+  const sel = document.getElementById('emailCVSelect');
+  const id = sel ? sel.value : null;
+  const v = id ? cvVersions.find(x=>x.id===id) : cvVersions.find(x=>x.isDefault)||cvVersions[0];
+  return v || null;
+}
+
+// ============================================================
+// EMAIL CONFIRMATION + SEND
+// ============================================================
+function confirmSendEmail(){
+  const to = document.getElementById('emailTo').value.trim();
+  const subject = document.getElementById('emailSubject').value.trim();
+  if(!to || !subject){ sendEmail(); return; } // let sendEmail handle validation
+  const cv = getSelectedCV();
+  const cvInfo = cv ? `\n📎 CV: ${cv.label}` : '\n📎 No CV attached';
+  const clInfo = (clData||clDefaultData) ? `\n📄 Cover Letter attached` : '';
+  const confirmed = confirm(`📧 Confirm send email?\n\nTo: ${to}\nSubject: ${subject}${cvInfo}${clInfo}\n\nSend now?`);
+  if(confirmed) sendEmail();
+}
+
+// ============================================================
+// AI TOOLS — Claude API Integration
+// ============================================================
+const CLAUDE_API = 'https://api.anthropic.com/v1/messages';
+
+async function callClaude(systemPrompt, userContent, isVision=false){
+  const messages = isVision ? [{role:'user', content: userContent}]
+                             : [{role:'user', content: userContent}];
+  const body = {
+    model: 'claude-sonnet-4-20250514',
+    max_tokens: 1000,
+    system: systemPrompt,
+    messages
+  };
+  const resp = await fetch(CLAUDE_API, {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify(body)
+  });
+  if(!resp.ok) throw new Error('API error: ' + resp.status);
+  const data = await resp.json();
+  return data.content?.[0]?.text || '';
+}
+
+// ── HR EXTRACTOR ─────────────────────────────────────────────
+let hrImageData = null;
+let hrImageType = null;
+
+function handleHRImage(event){
+  const file = event.target.files[0]; if(!file)return;
+  if(file.size > 3*1024*1024){ alert('Image too large (max 3MB)'); return; }
+  const reader = new FileReader();
+  reader.onload = e => {
+    hrImageData = e.target.result.split(',')[1];
+    hrImageType = file.type;
+    document.getElementById('hrImgZone').classList.add('has');
+    document.getElementById('hrImgZoneText').textContent = '✅ ' + file.name;
+    document.getElementById('hrImgStatus').innerHTML = '<span style="color:var(--green);font-size:12px">Image ready — click Extract HR Details</span>';
+  };
+  reader.readAsDataURL(file);
+  event.target.value='';
+}
+
+async function extractHRDetails(){
+  const text = document.getElementById('hrExtractText').value.trim();
+  if(!text && !hrImageData){ alert('Please paste text or upload an image first.'); return; }
+  const btn = document.getElementById('extractBtn');
+  btn.disabled=true; btn.innerHTML='🧠 Extracting...';
+  document.getElementById('extractResult').innerHTML = '<div class="alert alert-info">🧠 AI is reading the content...</div>';
+  try{
+    let userContent;
+    const sys = `You are an HR contact extractor. Extract all HR/recruiter contact information from the provided content.
+Return ONLY valid JSON in this exact format, nothing else:
+{"contacts":[{"name":"Full Name","company":"Company Name","email":"email@example.com","phone":"+91 XXXXX XXXXX","designation":"Job Title","notes":"Any other relevant info"}]}
+If a field is not found, use empty string "". Extract ALL contacts found. If none found, return {"contacts":[]}.`;
+
+    if(hrImageData){
+      userContent = [{type:'image',source:{type:'base64',media_type:hrImageType,data:hrImageData}},
+                     {type:'text',text: text ? 'Also check this text: '+text : 'Extract HR contacts from this image.'}];
+    } else {
+      userContent = `Extract HR contacts from this text:\n\n${text}`;
+    }
+    const raw = await callClaude(sys, userContent, !!hrImageData);
+    const json = JSON.parse(raw.replace(/```json|```/g,'').trim());
+    if(!json.contacts || json.contacts.length===0){
+      document.getElementById('extractResult').innerHTML='<div class="alert alert-warn">No HR contact details found in the provided content. Try adding more text with name, email, or phone.</div>';
+      return;
+    }
+    // Show extracted results with one-click save
+    document.getElementById('extractResult').innerHTML = `
+      <div style="font-size:13px;font-weight:600;color:var(--gold2);margin-bottom:10px">✅ Found ${json.contacts.length} contact(s):</div>
+      ${json.contacts.map((ct,i)=>`
+        <div style="background:var(--surface2);border:1px solid var(--border2);border-radius:10px;padding:14px;margin-bottom:10px">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+            <div><div style="font-size:10px;color:var(--text3);text-transform:uppercase">Name</div><div style="font-weight:600">${ct.name||'—'}</div></div>
+            <div><div style="font-size:10px;color:var(--text3);text-transform:uppercase">Company</div><div>${ct.company||'—'}</div></div>
+            <div><div style="font-size:10px;color:var(--text3);text-transform:uppercase">Email</div><div style="color:var(--gold)">${ct.email||'—'}</div></div>
+            <div><div style="font-size:10px;color:var(--text3);text-transform:uppercase">Phone</div><div>${ct.phone||'—'}</div></div>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="saveExtractedContact(${i}, ${JSON.stringify(ct).replace(/"/g,'&quot;')})">💾 Save to HR Contacts</button>
+        </div>`).join('')}`;
+  } catch(e){
+    document.getElementById('extractResult').innerHTML=`<div class="alert alert-error">Error: ${e.message}. Make sure you are logged in.</div>`;
+  }
+  btn.disabled=false; btn.innerHTML='🧠 Extract HR Details';
+}
+
+function saveExtractedContact(i, ct){
+  if(!ct.name && !ct.company){ alert('Need at least a name or company to save.'); return; }
+  const data={id:uid(),name:ct.name||'Unknown',company:ct.company||'Unknown',
+    email:ct.email||'',phone:ct.phone||'',desig:ct.designation||'',
+    notes:ct.notes||'Extracted via AI',linkedin:'',lastContact:''};
+  contacts.unshift(data);
+  LS.set('jt2_contacts',contacts);
+  saveToCloud('contacts',data.id,data);
+  renderContacts(); populateDropdowns();
+  // Show confirmation in the result
+  const btns=document.querySelectorAll('#extractResult .btn-primary');
+  if(btns[i]){ btns[i].textContent='✅ Saved!'; btns[i].disabled=true; }
+}
+
+function clearExtractor(){
+  document.getElementById('hrExtractText').value='';
+  document.getElementById('hrImgZone').classList.remove('has');
+  document.getElementById('hrImgZoneText').textContent='Click to upload screenshot';
+  document.getElementById('hrImgStatus').innerHTML='';
+  document.getElementById('extractResult').innerHTML='';
+  hrImageData=null; hrImageType=null;
+}
+
+// ── AI EMAIL WRITER ───────────────────────────────────────────
+async function generateEmail(){
+  const company = document.getElementById('aiCompany').value.trim();
+  const role = document.getElementById('aiRole').value.trim();
+  if(!company||!role){ alert('Please enter Company and Role.'); return; }
+  const type = document.getElementById('aiEmailType').value;
+  const tone = document.getElementById('aiTone').value;
+  const highlights = document.getElementById('aiHighlights').value.trim();
+  const btn = document.getElementById('genEmailBtn');
+  btn.disabled=true; btn.innerHTML='✍️ Writing...';
+  document.getElementById('aiEmailResult').innerHTML='<div class="alert alert-info">✍️ AI is writing your email...</div>';
+  try{
+    const sys = `You are an expert job application email writer for automotive industry professionals. Write concise, impactful emails. Return ONLY the email content in this JSON format: {"subject":"...","body":"..."}`;
+    const emailTypes = {application:'initial job application',followup:'follow-up 1 week after applying (no response yet)',thankyou:'thank you after an interview',referral:'application through a referral'};
+    const tones = {professional:'formal and professional',confident:'confident and assertive',warm:'warm and personable'};
+    const prompt = `Write a ${emailTypes[type]} email for:
+- Candidate: ${profile.name||'Akash Shah'}, ${profile.exp||'8+ years'} experience in automotive industry, specialization: ${profile.role||'Automotive Engineering'}
+- Company: ${company}
+- Role: ${role}
+- Tone: ${tones[tone]}
+${highlights?'- Key highlights to mention: '+highlights:''}
+- Phone: ${profile.phone||''}
+- LinkedIn: ${profile.linkedin||''}
+
+Keep it under 200 words. Professional but not generic.`;
+    const raw = await callClaude(sys, prompt);
+    const result = JSON.parse(raw.replace(/```json|```/g,'').trim());
+    document.getElementById('aiEmailResult').innerHTML = `
+      <div style="background:var(--surface2);border:1px solid var(--border2);border-radius:10px;padding:16px;margin-top:4px">
+        <div style="font-size:11px;color:var(--text3);margin-bottom:4px;text-transform:uppercase">Subject</div>
+        <div style="font-weight:600;margin-bottom:12px">${result.subject}</div>
+        <div style="font-size:11px;color:var(--text3);margin-bottom:6px;text-transform:uppercase">Body</div>
+        <div style="font-size:13px;color:var(--text2);line-height:1.7;white-space:pre-wrap">${result.body}</div>
+        <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-primary btn-sm" onclick="useAIEmail(${JSON.stringify(result).replace(/"/g,'&quot;')})">📤 Use this email</button>
+          <button class="btn btn-secondary btn-sm" onclick="generateEmail()">🔄 Regenerate</button>
+        </div>
+      </div>`;
+  } catch(e){
+    document.getElementById('aiEmailResult').innerHTML=`<div class="alert alert-error">Error: ${e.message}</div>`;
+  }
+  btn.disabled=false; btn.innerHTML='✍️ Generate Email';
+}
+
+function useAIEmail(result){
+  nav('email', document.querySelectorAll('.nav-item')[3]);
+  setTimeout(()=>{
+    document.getElementById('emailSubject').value = result.subject||'';
+    document.getElementById('emailBody').value = result.body||'';
+  },150);
+}
+
+// ── INTERVIEW PREP COACH ──────────────────────────────────────
+async function generateInterviewPrep(){
+  const company = document.getElementById('prepCompany').value.trim();
+  const role    = document.getElementById('prepRole').value.trim();
+  if(!company||!role){ alert('Please enter Company and Role.'); return; }
+  const type  = document.getElementById('prepType').value;
+  const count = document.getElementById('prepCount').value;
+  const btn = document.getElementById('prepBtn');
+  btn.disabled=true; btn.innerHTML='🎤 Generating...';
+  document.getElementById('prepResult').innerHTML='<div class="alert alert-info">🎤 AI is preparing questions...</div>';
+  try{
+    const sys = `You are an expert interview coach specializing in the automotive industry. Return ONLY JSON in this exact format: {"questions":[{"q":"Question text","hint":"Brief answer hint based on 8+ years automotive experience","type":"technical|behavioural|managerial"}]}`;
+    const types={technical:'technical engineering',hr:'HR and behavioural',managerial:'managerial and leadership',all:'technical, behavioural, and managerial'};
+    const prompt=`Generate ${count} ${types[type]} interview questions for:
+- Role: ${role} at ${company}
+- Candidate background: ${profile.exp||'8+'} years automotive industry, specialization: ${profile.role||'Automotive Engineering'}
+- Make questions specific to this role and company type
+- Include realistic answer hints based on the candidate's experience level`;
+    const raw = await callClaude(sys, prompt);
+    const result = JSON.parse(raw.replace(/```json|```/g,'').trim());
+    const typeColors={technical:'var(--blue2)',behavioural:'var(--purple)',managerial:'var(--orange)'};
+    document.getElementById('prepResult').innerHTML = `
+      <div style="margin-top:4px">
+        ${result.questions.map((q,i)=>`
+          <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:10px;">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:8px">
+              <div style="font-weight:600;font-size:13px;flex:1">Q${i+1}. ${q.q}</div>
+              <span style="background:rgba(0,0,0,0.15);color:${typeColors[q.type]||'var(--text2)'};padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700;white-space:nowrap;flex-shrink:0">${q.type}</span>
+            </div>
+            <details style="cursor:pointer">
+              <summary style="font-size:12px;color:var(--gold);font-weight:500;list-style:none">💡 Show answer hint</summary>
+              <div style="font-size:12px;color:var(--text2);line-height:1.6;margin-top:8px;padding:10px;background:var(--surface3);border-radius:6px">${q.hint}</div>
+            </details>
+          </div>`).join('')}
+        <button class="btn btn-secondary btn-sm" onclick="generateInterviewPrep()" style="margin-top:6px">🔄 Regenerate</button>
+      </div>`;
+  } catch(e){
+    document.getElementById('prepResult').innerHTML=`<div class="alert alert-error">Error: ${e.message}</div>`;
+  }
+  btn.disabled=false; btn.innerHTML='🎤 Generate Questions';
+}
+
+// ============================================================
+// UPDATED INIT ADDITIONS
+// ============================================================
+function initNewFeatures(){
+  initPin();
+  // Load CV versions
+  if(cvVersions.length === 0 && cvData){
+    // Migrate old single CV to new versions system
+    cvVersions = [{id:uid(),name:cvName||'CV.pdf',label:'My CV',data:cvData,isDefault:true,added:new Date().toISOString()}];
+    LS.set('jt2_cvversions',cvVersions);
+  }
+  renderCVVersions();
+  updateLastSyncUI();
 }
 
 window.addEventListener('load',init);
