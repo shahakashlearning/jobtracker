@@ -534,7 +534,7 @@ body.theme-light .card-gold { background: linear-gradient(135deg,#ffffff 0%,rgba
 
   <!-- API KEY STATUS BANNER -->
   <div id="aiKeyBanner" class="alert alert-warn" style="display:none;margin-bottom:4px">
-    ⚠️ Anthropic API key not set. AI features will not work until you add your key in
+    ⚠️ Groq API key not set. AI features need a free key from console.groq.com — add it in
     <a href="#" onclick="nav('settings',document.querySelectorAll('.nav-item')[7])" style="color:var(--gold);font-weight:700">Settings → AI Tools API Key →</a>
   </div>
 
@@ -922,40 +922,41 @@ body.theme-light .card-gold { background: linear-gradient(135deg,#ffffff 0%,rgba
   </div>
 
 
-  <!-- ANTHROPIC API KEY — required for AI Tools -->
+  <!-- GROQ API KEY — Free, required for AI Tools -->
   <div class="card card-gold">
-    <div class="card-header"><div class="card-title"><span class="card-title-icon">🤖</span>AI Tools — Anthropic API Key</div></div>
-    <div class="alert alert-info" style="font-size:13px">
-      The AI Tools (HR Extractor, Email Writer, Interview Coach) use the Claude AI API. You need a <strong>free</strong> Anthropic API key. It takes 2 minutes to get one.
+    <div class="card-header"><div class="card-title"><span class="card-title-icon">🤖</span>AI Tools — Free Groq API Key Setup</div></div>
+    <div class="alert alert-success" style="font-size:13px">
+      ✅ <strong>100% Free, No credit card needed.</strong> AI Tools use Groq's free LLaMA 3.1 model — 14,400 requests/day free forever.
     </div>
     <div style="background:var(--surface2);border-radius:10px;padding:14px;margin-bottom:14px;border:1px solid var(--border)">
-      <div style="font-weight:600;font-size:13px;color:var(--gold2);margin-bottom:10px">How to get your free API key:</div>
-      <div style="display:flex;gap:10px;margin-bottom:8px;font-size:13px;color:var(--text2);align-items:flex-start">
-        <div style="width:22px;height:22px;border-radius:50%;background:var(--gold);color:#0d0f14;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">1</div>
-        <div>Go to <a href="https://console.anthropic.com" target="_blank" style="color:var(--gold)">console.anthropic.com</a> → Sign up (or log in with your Google account)</div>
+      <div style="font-weight:600;font-size:13px;color:var(--gold2);margin-bottom:12px">Get your free Groq API key (takes 60 seconds):</div>
+      <div style="display:flex;gap:10px;margin-bottom:10px;font-size:13px;color:var(--text2);align-items:flex-start">
+        <div style="width:24px;height:24px;border-radius:50%;background:var(--gold);color:#0d0f14;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0">1</div>
+        <div>Open <a href="https://console.groq.com" target="_blank" style="color:var(--gold);font-weight:600">console.groq.com</a> → Click <strong>Sign Up</strong> → Use your Google account (fastest)</div>
       </div>
-      <div style="display:flex;gap:10px;margin-bottom:8px;font-size:13px;color:var(--text2);align-items:flex-start">
-        <div style="width:22px;height:22px;border-radius:50%;background:var(--gold);color:#0d0f14;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">2</div>
-        <div>Left sidebar → <strong>API Keys</strong> → Click <strong>"Create Key"</strong> → Copy the key (starts with <code>sk-ant-</code>)</div>
+      <div style="display:flex;gap:10px;margin-bottom:10px;font-size:13px;color:var(--text2);align-items:flex-start">
+        <div style="width:24px;height:24px;border-radius:50%;background:var(--gold);color:#0d0f14;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0">2</div>
+        <div>After login → Left sidebar → click <strong>API Keys</strong> → click <strong>"Create API Key"</strong> → give it any name (e.g. <em>JobTracker</em>) → click <strong>Submit</strong></div>
       </div>
-      <div style="display:flex;gap:10px;margin-bottom:8px;font-size:13px;color:var(--text2);align-items:flex-start">
-        <div style="width:22px;height:22px;border-radius:50%;background:var(--gold);color:#0d0f14;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">3</div>
-        <div>Paste it below → click <strong>Save API Key</strong> → Done. All AI features will work instantly.</div>
+      <div style="display:flex;gap:10px;margin-bottom:10px;font-size:13px;color:var(--text2);align-items:flex-start">
+        <div style="width:24px;height:24px;border-radius:50%;background:var(--gold);color:#0d0f14;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0">3</div>
+        <div>Copy the key shown (starts with <code>gsk_</code>) → paste below → click <strong>Save & Test</strong></div>
       </div>
-      <div style="font-size:12px;color:var(--text3);margin-top:8px">💳 New accounts get free credits. After that, cost is approximately ₹0.05 per AI request — very cheap for personal use.</div>
+      <div style="background:rgba(52,211,153,0.08);border:1px solid rgba(52,211,153,0.25);border-radius:8px;padding:10px 12px;margin-top:8px;font-size:12px;color:var(--text2)">
+        🎉 <strong>Completely free forever.</strong> Groq gives 14,400 AI requests per day at no cost. For your job search usage (10–20 requests/day), you will never pay anything.
+      </div>
     </div>
     <div class="form-group">
-      <label>Anthropic API Key</label>
+      <label>Groq API Key</label>
       <div style="display:flex;gap:8px">
-        <input type="password" id="anthropicKeyInput" placeholder="sk-ant-api03-..." style="flex:1">
+        <input type="password" id="anthropicKeyInput" placeholder="gsk_..." style="flex:1">
         <button class="btn btn-secondary btn-sm" onclick="toggleKeyVisibility()" id="keyVisBtn" style="white-space:nowrap;flex-shrink:0">👁 Show</button>
       </div>
     </div>
     <div id="apiKeyStatus" style="font-size:12px;margin-top:4px;margin-bottom:10px;"></div>
     <div style="display:flex;gap:10px;flex-wrap:wrap">
-      <button class="btn btn-primary" onclick="saveAnthropicKey()">💾 Save API Key</button>
-      <button class="btn btn-success" onclick="testAnthropicKey()" id="testKeyBtn">🧪 Test Connection</button>
-      <button class="btn btn-danger btn-sm" onclick="clearAnthropicKey()">✕ Remove Key</button>
+      <button class="btn btn-primary" onclick="saveGroqKey()">💾 Save & Test</button>
+      <button class="btn btn-danger btn-sm" onclick="clearGroqKey()">✕ Remove Key</button>
     </div>
     <div id="apiKeyTestResult" style="margin-top:12px;"></div>
   </div>
@@ -1115,13 +1116,15 @@ body.theme-light .card-gold { background: linear-gradient(135deg,#ffffff 0%,rgba
 <div class="modal-overlay" id="mPreview">
 <div class="modal modal-lg">
   <div class="modal-header">
-    <div class="modal-title">Email Preview</div>
+    <div class="modal-title">📧 Email Preview</div>
     <button class="close-btn" onclick="closeModal('mPreview')">✕</button>
   </div>
-  <div id="previewContent" style="background:var(--surface2);padding:20px;border-radius:10px;font-size:13px;line-height:1.8;white-space:pre-wrap;color:var(--text2);"></div>
-  <div style="margin-top:14px;display:flex;gap:8px;">
-    <button class="btn btn-primary" onclick="closeModal('mPreview');sendEmail()">📤 Send Now</button>
-    <button class="btn btn-secondary" onclick="closeModal('mPreview')">Close</button>
+  <div class="alert alert-info" style="font-size:12px;margin-bottom:14px">Review your email carefully before sending. Once sent, it cannot be recalled.</div>
+  <div id="previewContent" style="margin-bottom:16px"></div>
+  <div style="display:flex;gap:10px;flex-wrap:wrap">
+    <button class="btn btn-primary" onclick="closeModal('mPreview');sendEmail()" id="previewSendBtn">📤 Send Now</button>
+    <button class="btn btn-secondary" onclick="closeModal('mPreview')">✏️ Edit Email</button>
+    <button class="btn btn-danger btn-sm" onclick="closeModal('mPreview')" style="margin-left:auto">✕ Cancel</button>
   </div>
 </div>
 </div>
@@ -1759,9 +1762,56 @@ async function deleteContact(id){
 }
 
 function quickEmail(id){
-  const c=contacts.find(x=>x.id===id);if(!c)return;
-  nav('email',document.querySelectorAll('.nav-item')[3]);
-  setTimeout(()=>document.getElementById('emailTo').value=c.email||'',100);
+  const ct = contacts.find(x=>x.id===id); if(!ct)return;
+  // Navigate to email tab
+  nav('email', document.querySelectorAll('.nav-item')[3]);
+  setTimeout(()=>{
+    // Fill To field
+    document.getElementById('emailTo').value = ct.email||'';
+    // Pick contact in dropdown
+    const sel = document.getElementById('emailContactPick');
+    if(sel) sel.value = ct.id;
+    // Auto-apply first template with HR name personalisation
+    if(templates.length){
+      const t = templates[0];
+      const hrName = ct.name ? ct.name.split(' ')[0] : 'Hiring Team'; // first name only
+      const subject = fillVars(t.subject, {role:'[Role]', company:ct.company||'[Company]'});
+      let body = fillVars(t.body, {role:'[Role]', company:ct.company||'[Company]'});
+      // Replace generic "Hiring Team" greeting with HR first name
+      body = body.replace(/Dear Hiring Team,/g, `Dear ${hrName},`);
+      body = body.replace(/Dear \[Hiring Team\],/g, `Dear ${hrName},`);
+      document.getElementById('emailSubject').value = subject;
+      document.getElementById('emailBody').value = body;
+    }
+    // Link to any existing job with this HR
+    const linkedJob = jobs.find(j=>j.hr===ct.id);
+    if(linkedJob) document.getElementById('emailJobLink').value = linkedJob.id;
+    // Open preview immediately so user can review before sending
+    setTimeout(openEmailPreviewFromContact, 200);
+  }, 150);
+}
+
+function openEmailPreviewFromContact(){
+  const to      = document.getElementById('emailTo').value;
+  const subject = document.getElementById('emailSubject').value;
+  const body    = document.getElementById('emailBody').value;
+  if(!to || !subject || !body){ return; } // stay on email page if not filled
+  const cv = getSelectedCV ? getSelectedCV() : null;
+  const cvLine  = cv ? `\n📎 CV: ${cv.label}` : (cvData ? `\n📎 CV: ${cvName||'attached'}` : '\n📎 No CV');
+  const clLine  = (clData||clDefaultData) ? '\n📄 Cover Letter: attached' : '';
+  document.getElementById('previewContent').innerHTML =
+    `<div style="margin-bottom:12px">
+       <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:3px">To</div>
+       <div style="font-weight:600">${to}</div>
+     </div>
+     <div style="margin-bottom:12px">
+       <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:3px">Subject</div>
+       <div style="font-weight:600">${subject}</div>
+     </div>
+     <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Message</div>
+     <div style="white-space:pre-wrap;font-size:13px;color:var(--text2);line-height:1.7;background:var(--surface3);padding:14px;border-radius:8px">${body}</div>
+     <div style="margin-top:12px;font-size:12px;color:var(--text3)">${cvLine}${clLine}</div>`;
+  openModal('mPreview');
 }
 
 // ============================================================
@@ -1918,10 +1968,24 @@ function showEmailResult(msg,type){
 }
 
 function previewEmail(){
-  const to=document.getElementById('emailTo').value;
-  const subject=document.getElementById('emailSubject').value;
-  const body=document.getElementById('emailBody').value;
-  document.getElementById('previewContent').textContent=`To: ${to}\nSubject: ${subject}\n${'─'.repeat(50)}\n\n${body}`;
+  const to      = document.getElementById('emailTo').value;
+  const subject = document.getElementById('emailSubject').value;
+  const body    = document.getElementById('emailBody').value;
+  const cv = getSelectedCV ? getSelectedCV() : null;
+  const cvLine  = cv ? `📎 CV: ${cv.label}` : (cvData ? `📎 CV: ${cvName||'attached'}` : '📎 No CV uploaded');
+  const clLine  = (clData||clDefaultData) ? '<br>📄 Cover Letter: attached' : '';
+  document.getElementById('previewContent').innerHTML =
+    `<div style="margin-bottom:12px">
+       <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:3px">To</div>
+       <div style="font-weight:600">${to||'<span style=color:var(--red)>Not set</span>'}</div>
+     </div>
+     <div style="margin-bottom:12px">
+       <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:3px">Subject</div>
+       <div style="font-weight:600">${subject||'<span style=color:var(--red)>Not set</span>'}</div>
+     </div>
+     <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Message</div>
+     <div style="white-space:pre-wrap;font-size:13px;color:var(--text2);line-height:1.7;background:var(--surface3);padding:14px;border-radius:8px;max-height:300px;overflow-y:auto">${body||'<em>No message body</em>'}</div>
+     <div style="margin-top:12px;font-size:12px;color:var(--text3)">${cvLine}${clLine}</div>`;
   openModal('mPreview');
 }
 
@@ -2461,25 +2525,29 @@ service cloud.firestore {
 
 
 // ============================================================
-// ANTHROPIC API KEY MANAGEMENT
+// GROQ API KEY MANAGEMENT (Free — no credit card needed)
 // ============================================================
-function saveAnthropicKey(){
+function saveGroqKey(){
   const key = document.getElementById('anthropicKeyInput').value.trim();
-  if(!key){ showMsg('apiKeyTestResult','Please enter your API key','error'); return; }
-  if(!key.startsWith('sk-ant-')){ showMsg('apiKeyTestResult','Invalid key format. Anthropic API keys start with sk-ant-','error'); return; }
-  localStorage.setItem('jt2_anthropic_key', key);
-  document.getElementById('apiKeyStatus').innerHTML='<span style="color:var(--green)">✅ API key saved</span>';
-  showMsg('apiKeyTestResult','✅ Key saved! Click "Test Connection" to verify it works.','success');
-  updateAIKeyBanner();
+  if(!key){ showMsg('apiKeyTestResult','Please enter your Groq API key','error'); return; }
+  if(!key.startsWith('gsk_')){ showMsg('apiKeyTestResult','Invalid key format. Groq API keys start with gsk_  — get one free at console.groq.com','error'); return; }
+  localStorage.setItem('jt2_groq_key', key);
+  document.getElementById('apiKeyStatus').innerHTML='<span style="color:var(--green)">✅ Groq key saved — testing now...</span>';
+  testGroqKey();
 }
 
-function clearAnthropicKey(){
-  if(!confirm('Remove API key?'))return;
-  localStorage.removeItem('jt2_anthropic_key');
+// Legacy alias so any old onclick="saveAnthropicKey()" still works
+const saveAnthropicKey = saveGroqKey;
+
+function clearGroqKey(){
+  if(!confirm('Remove Groq API key?'))return;
+  localStorage.removeItem('jt2_groq_key');
   document.getElementById('anthropicKeyInput').value='';
   document.getElementById('apiKeyStatus').innerHTML='<span style="color:var(--red)">❌ API key removed</span>';
+  document.getElementById('apiKeyTestResult').innerHTML='';
   updateAIKeyBanner();
 }
+const clearAnthropicKey = clearGroqKey;
 
 function toggleKeyVisibility(){
   const inp = document.getElementById('anthropicKeyInput');
@@ -2488,56 +2556,49 @@ function toggleKeyVisibility(){
   else { inp.type='password'; btn.textContent='👁 Show'; }
 }
 
-async function testAnthropicKey(){
-  const key = localStorage.getItem('jt2_anthropic_key');
-  if(!key){ showMsg('apiKeyTestResult','No API key saved yet. Enter and save your key first.','error'); return; }
-  const btn = document.getElementById('testKeyBtn');
-  btn.disabled=true; btn.textContent='🧪 Testing...';
-  showMsg('apiKeyTestResult','Testing connection...','info');
+async function testGroqKey(){
+  const key = localStorage.getItem('jt2_groq_key');
+  if(!key){ showMsg('apiKeyTestResult','No key saved yet. Enter and save your key first.','error'); return; }
+  showMsg('apiKeyTestResult','🔄 Testing Groq connection...','info');
   try{
-    const resp = await fetch(CLAUDE_API, {
+    const resp = await fetch(GROQ_API, {
       method:'POST',
-      headers:{
-        'Content-Type':'application/json',
-        'x-api-key': key,
-        'anthropic-version':'2023-06-01',
-        'anthropic-dangerous-direct-browser-access':'true'
-      },
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},
       body: JSON.stringify({
-        model:'claude-haiku-4-5',
-        max_tokens:10,
-        messages:[{role:'user',content:'Say OK'}]
+        model: GROQ_MODEL,
+        max_tokens: 5,
+        messages:[{role:'user',content:'Say OK only'}]
       })
     });
     if(resp.ok){
-      showMsg('apiKeyTestResult','✅ Connection successful! All AI features are ready to use.','success');
-      document.getElementById('apiKeyStatus').innerHTML='<span style="color:var(--green)">✅ Connected & verified</span>';
+      showMsg('apiKeyTestResult','✅ Groq connected! All AI features are ready. Free: 14,400 requests/day.','success');
+      document.getElementById('apiKeyStatus').innerHTML='<span style="color:var(--green)">✅ Groq connected & verified ✓</span>';
       updateAIKeyBanner();
     } else {
       const err=await resp.json().catch(()=>({}));
       const msg=err.error?.message||resp.statusText;
-      if(resp.status===401) showMsg('apiKeyTestResult','❌ Invalid API key. Copy it again from console.anthropic.com','error');
-      else showMsg('apiKeyTestResult','❌ Test failed ('+resp.status+'): '+msg,'error');
+      if(resp.status===401) showMsg('apiKeyTestResult','❌ Invalid key. Copy it again from console.groq.com → API Keys','error');
+      else showMsg('apiKeyTestResult','❌ Error ('+resp.status+'): '+msg,'error');
     }
   } catch(e){
     showMsg('apiKeyTestResult','❌ Network error: '+e.message,'error');
   }
-  btn.disabled=false; btn.textContent='🧪 Test Connection';
 }
+const testAnthropicKey = testGroqKey;
 
 function updateAIKeyBanner(){
   const banner = document.getElementById('aiKeyBanner');
   if(!banner)return;
-  const hasKey = !!localStorage.getItem('jt2_anthropic_key');
+  const hasKey = !!localStorage.getItem('jt2_groq_key');
   banner.style.display = hasKey ? 'none' : 'flex';
 }
 
 function initApiKeyUI(){
-  const saved = localStorage.getItem('jt2_anthropic_key');
+  const saved = localStorage.getItem('jt2_groq_key');
   const inp = document.getElementById('anthropicKeyInput');
   if(saved && inp){
     inp.value = saved;
-    document.getElementById('apiKeyStatus').innerHTML='<span style="color:var(--green)">✅ API key saved</span>';
+    document.getElementById('apiKeyStatus').innerHTML='<span style="color:var(--green)">✅ Groq API key saved</span>';
   }
   updateAIKeyBanner();
 }
@@ -2815,48 +2876,52 @@ function confirmSendEmail(){
 // ============================================================
 // AI TOOLS — Claude API Integration
 // ============================================================
-const CLAUDE_API = 'https://api.anthropic.com/v1/messages';
+// ── GROQ AI ENGINE (Free — LLaMA 3.1 via Groq) ─────────────
+const GROQ_API = 'https://api.groq.com/openai/v1/chat/completions';
+const GROQ_MODEL = 'llama-3.1-8b-instant'; // Free, fast, accurate
 
-// Get the stored API key — throws a clear error if missing
-function getAnthropicKey(){
-  const key = localStorage.getItem('jt2_anthropic_key')||'';
+function getGroqKey(){
+  const key = localStorage.getItem('jt2_groq_key')||'';
   if(!key) throw new Error('NO_KEY');
   return key;
 }
 
-async function callClaude(systemPrompt, userContent, isVision=false){
+async function callAI(systemPrompt, userContent){
   let apiKey;
-  try{ apiKey = getAnthropicKey(); }
+  try{ apiKey = getGroqKey(); }
   catch(e){
-    throw new Error('Please add your Anthropic API key in Settings → AI Tools API Key before using AI features.');
+    throw new Error('Please add your free Groq API key in Settings → AI Tools before using AI features.');
   }
-  const messages = [{role:'user', content: isVision ? userContent : userContent}];
   const body = {
-    model: 'claude-sonnet-4-5',
+    model: GROQ_MODEL,
     max_tokens: 1500,
-    system: systemPrompt,
-    messages
+    temperature: 0.3,
+    messages: [
+      {role:'system', content: systemPrompt},
+      {role:'user',   content: typeof userContent === 'string' ? userContent : JSON.stringify(userContent)}
+    ]
   };
-  const resp = await fetch(CLAUDE_API, {
+  const resp = await fetch(GROQ_API, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true'
+      'Authorization': 'Bearer ' + apiKey
     },
     body: JSON.stringify(body)
   });
   if(!resp.ok){
     const err = await resp.json().catch(()=>({error:{message:resp.statusText}}));
     const msg = err.error?.message || resp.statusText;
-    if(resp.status === 401) throw new Error('Invalid API key. Check Settings → AI Tools API Key.');
-    if(resp.status === 429) throw new Error('Rate limit hit. Wait 30 seconds and try again.');
-    throw new Error('API error ' + resp.status + ': ' + msg);
+    if(resp.status === 401) throw new Error('Invalid Groq API key. Go to Settings → AI Tools to fix it.');
+    if(resp.status === 429) throw new Error('Rate limit hit. Groq free tier allows 14,400 requests/day. Wait a moment and retry.');
+    throw new Error('Groq API error ' + resp.status + ': ' + msg);
   }
   const data = await resp.json();
-  return data.content?.[0]?.text || '';
+  return data.choices?.[0]?.message?.content || '';
 }
+
+// Alias for backward compat with any callClaude references
+const callClaude = callAI;
 
 // ── HR EXTRACTOR ─────────────────────────────────────────────
 let hrImageData = null;
