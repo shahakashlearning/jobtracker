@@ -409,10 +409,16 @@ body.theme-light .card-gold { background: linear-gradient(135deg,#ffffff 0%,rgba
     </div>
     <div class="filter-bar">
       <input type="text" id="contactSearch" placeholder="🔍 Search name, company..." oninput="renderContacts()">
+      <select id="contactEmailFilter" onchange="renderContacts()" style="width:auto;min-width:150px">
+        <option value="">All Contacts</option>
+        <option value="unsent">❌ Not Yet Emailed</option>
+        <option value="sent">✅ Already Emailed</option>
+      </select>
+      <button class="btn btn-secondary btn-sm" onclick="exportContactsCSV()" title="Export to CSV">⬇️ Export CSV</button>
     </div>
     <div class="table-wrap">
       <table>
-        <thead><tr><th>Name</th><th>Company</th><th>Email</th><th>Phone</th><th>LinkedIn</th><th>Last Contact</th><th>Actions</th></tr></thead>
+        <thead><tr><th>Name</th><th>Company</th><th>Email</th><th>Phone</th><th>LinkedIn</th><th>Last Contact</th><th>Email Status</th><th>Actions</th></tr></thead>
         <tbody id="contactTableBody"></tbody>
       </table>
     </div>
@@ -464,6 +470,7 @@ body.theme-light .card-gold { background: linear-gradient(135deg,#ffffff 0%,rgba
       <button class="btn btn-secondary" onclick="saveDraft()">💾 Save Draft</button>
     </div>
     <div id="emailResult" style="margin-top:12px;"></div>
+    <div id="autoSaveIndicator" style="font-size:11px;color:var(--text3);margin-top:4px;opacity:0;transition:opacity 1s"></div>
   </div>
   <div class="card">
     <div class="card-header"><div class="card-title"><span class="card-title-icon">📂</span>Sent Email Log</div></div>
@@ -1436,7 +1443,7 @@ function nav(id,el){
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   document.getElementById('page-'+id).classList.add('active');
   if(el)el.classList.add('active');
-  if(id==='email')renderEmailPage();
+  if(id==='email'){ renderEmailPage(); startAutoSave(); }
   if(id==='dashboard')renderDashboard();
   if(id==='tools')updateAIKeyBanner();
 }
@@ -1690,24 +1697,43 @@ function emailAboutJob(id){
 // ============================================================
 // CONTACTS
 // ============================================================
+function getContactEmailStatus(email){
+  // Returns: {sent: bool, count: int, lastDate: string|null}
+  if(!email) return {sent:false,count:0,lastDate:null};
+  const emailLower = email.toLowerCase().trim();
+  const logs = sentLog.filter(e=>(e.to||'').toLowerCase().trim()===emailLower);
+  if(!logs.length) return {sent:false,count:0,lastDate:null};
+  const sorted = [...logs].sort((a,b)=>new Date(b.date)-new Date(a.date));
+  return {sent:true, count:logs.length, lastDate:sorted[0].date};
+}
+
 function renderContacts(){
   const q=(document.getElementById('contactSearch')?.value||'').toLowerCase();
-  const filtered=contacts.filter(c=>!q||c.name.toLowerCase().includes(q)||c.company.toLowerCase().includes(q));
-  document.getElementById('contactTableBody').innerHTML=filtered.length?filtered.map(c=>`
-    <tr>
-      <td><div style="font-weight:600">${c.name}</div><div style="font-size:11px;color:var(--text3)">${c.desig||''}</div></td>
-      <td>${c.company}</td>
-      <td><a href="mailto:${c.email}" style="color:var(--gold)">${c.email}</a></td>
-      <td>${c.phone||'—'}</td>
-      <td>${c.linkedin?`<a href="${c.linkedin}" target="_blank" style="color:var(--blue2)">LinkedIn ↗</a>`:'—'}</td>
-      <td style="font-size:12px;color:var(--text3)">${c.lastContact?fmtDate(c.lastContact):'—'}</td>
+  const statusF = document.getElementById('contactEmailFilter')?.value||'';
+  let filtered=contacts.filter(ct=>!q||ct.name.toLowerCase().includes(q)||ct.company.toLowerCase().includes(q));
+  if(statusF==='sent')   filtered=filtered.filter(ct=>getContactEmailStatus(ct.email).sent);
+  if(statusF==='unsent') filtered=filtered.filter(ct=>!getContactEmailStatus(ct.email).sent);
+  document.getElementById('contactTableBody').innerHTML=filtered.length?filtered.map(ct=>{
+    const es = getContactEmailStatus(ct.email);
+    const emailStatusBadge = es.sent
+      ? `<span style="display:inline-flex;align-items:center;gap:4px;background:rgba(52,211,153,0.12);color:var(--green);border:1px solid rgba(52,211,153,0.3);padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;white-space:nowrap" title="Last emailed: ${fmtDate(es.lastDate)}">✉ Sent (${es.count})</span>`
+      : `<span style="display:inline-flex;align-items:center;gap:4px;background:rgba(248,113,113,0.1);color:var(--red);border:1px solid rgba(248,113,113,0.25);padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700" title="Not yet emailed">✕ Not Sent</span>`;
+    return `<tr>
+      <td><div style="font-weight:600">${ct.name}</div><div style="font-size:11px;color:var(--text3)">${ct.desig||''}</div></td>
+      <td>${ct.company}</td>
+      <td><a href="mailto:${ct.email}" style="color:var(--gold)">${ct.email}</a></td>
+      <td>${ct.phone||'—'}</td>
+      <td>${ct.linkedin?`<a href="${ct.linkedin}" target="_blank" style="color:var(--blue2)">LinkedIn ↗</a>`:'—'}</td>
+      <td style="font-size:12px;color:var(--text3)">${ct.lastContact?fmtDate(ct.lastContact):'—'}</td>
+      <td>${emailStatusBadge}</td>
       <td><div style="display:flex;gap:5px;flex-wrap:wrap">
-        <button class="btn btn-blue btn-sm" onclick="quickEmail('${c.id}')">📧</button>
-        <button class="btn btn-secondary btn-sm" onclick="editContact('${c.id}')">✏️</button>
-        <button class="btn btn-danger btn-sm" onclick="deleteContact('${c.id}')">🗑</button>
+        <button class="btn btn-blue btn-sm" onclick="quickEmail('${ct.id}')" title="Send Email">📧</button>
+        <button class="btn btn-secondary btn-sm" onclick="editContact('${ct.id}')" title="Edit">✏️</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteContact('${ct.id}')" title="Delete">🗑</button>
       </div></td>
-    </tr>`).join('')
-    :'<tr><td colspan="7"><div class="empty"><div class="empty-icon">👥</div><div class="empty-title">No contacts yet</div></div></td></tr>';
+    </tr>`;
+  }).join('')
+    :'<tr><td colspan="8"><div class="empty"><div class="empty-icon">👥</div><div class="empty-title">No contacts yet</div></div></td></tr>';
 }
 
 function openAddContact(){
@@ -1818,6 +1844,16 @@ function openEmailPreviewFromContact(){
 // EMAIL
 // ============================================================
 function renderEmailPage(){
+  // Restore last draft if email fields are empty
+  const subj = document.getElementById('emailSubject')?.value;
+  if(!subj){
+    const draft = LS.getObj('jt2_draft',null);
+    if(draft && draft.subject){
+      document.getElementById('emailSubject').value = draft.subject||'';
+      document.getElementById('emailBody').value    = draft.body||'';
+      document.getElementById('emailTo').value      = draft.to||'';
+    }
+  }
   const warn=document.getElementById('gmailWarn');
   if(warn)warn.style.display=gmailToken?'none':'flex';
   document.getElementById('templateChips').innerHTML=templates.map(t=>
@@ -2603,6 +2639,44 @@ function initApiKeyUI(){
   updateAIKeyBanner();
 }
 
+
+// ── AUTO-SAVE DRAFT ──────────────────────────────────────────
+let autoSaveTimer = null;
+function startAutoSave(){
+  clearInterval(autoSaveTimer);
+  autoSaveTimer = setInterval(()=>{
+    const to      = document.getElementById('emailTo')?.value;
+    const subject = document.getElementById('emailSubject')?.value;
+    const body    = document.getElementById('emailBody')?.value;
+    if(subject || body){
+      LS.set('jt2_draft',{to,subject,body,savedAt:new Date().toISOString()});
+      const el = document.getElementById('autoSaveIndicator');
+      if(el){ el.textContent='Draft auto-saved '+new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}); el.style.opacity='1'; setTimeout(()=>el.style.opacity='0',3000); }
+    }
+  }, 30000);
+}
+
+
+// ── EXPORT CONTACTS TO CSV ───────────────────────────────────
+function exportContactsCSV(){
+  if(!contacts.length){ alert('No contacts to export.'); return; }
+  const headers = ['Name','Company','Email','Phone','LinkedIn','Designation','Notes','Last Contact','Email Sent Count'];
+  const rows = contacts.map(ct=>{
+    const es = getContactEmailStatus(ct.email);
+    return [
+      ct.name||'', ct.company||'', ct.email||'', ct.phone||'',
+      ct.linkedin||'', ct.desig||'', (ct.notes||'').replace(/,/g,';'),
+      ct.lastContact?fmtDate(ct.lastContact):'', es.count
+    ].map(v=>`"${v}"`).join(',');
+  });
+  const csv = [headers.join(','), ...rows].join('\n');
+  const blob = new Blob([csv],{type:'text/csv'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'HR_Contacts_'+new Date().toISOString().split('T')[0]+'.csv';
+  a.click();
+}
+
 // ============================================================
 // THEME SYSTEM
 // ============================================================
@@ -2853,9 +2927,11 @@ function updateCVSelector(){
 }
 
 function getSelectedCV(){
+  if(!cvVersions || !cvVersions.length) return null; // no CVs uploaded
   const sel = document.getElementById('emailCVSelect');
   const id = sel ? sel.value : null;
-  const v = id ? cvVersions.find(x=>x.id===id) : cvVersions.find(x=>x.isDefault)||cvVersions[0];
+  const v = id ? (cvVersions.find(x=>x.id===id) || cvVersions.find(x=>x.isDefault) || cvVersions[0])
+               : (cvVersions.find(x=>x.isDefault) || cvVersions[0]);
   return v || null;
 }
 
@@ -2942,63 +3018,170 @@ function handleHRImage(event){
   event.target.value='';
 }
 
+// ── RULE-BASED LINKEDIN PARSER (works without any API key) ──
+function parseLinkedInRuleBased(text){
+  const results = [];
+  // Email pattern
+  const emails = [...new Set(text.match(/[\w.+-]+@[\w-]+\.[a-z]{2,}/gi)||[])];
+  // Phone patterns (Indian & international)
+  const phones = [...new Set((text.match(/(?:\+91[-.\s]?)?[6-9]\d{4}[-.\s]?\d{5}|\+\d{1,3}[-.\s]?\d{6,12}/g)||[]))];
+  // Name extraction heuristics
+  let name = '';
+  const namePatterns = [
+    /(?:contact|reach|DM|message|connect with|email)\s+([A-Z][a-z]+ [A-Z][a-z]+)/,
+    /(?:Hi,?\s+I am|I'm|My name is)\s+([A-Z][a-z]+ [A-Z][a-z]+)/,
+    /^([A-Z][a-z]+ [A-Z][a-z]+)\s*[\|–-]/m,
+    /([A-Z][a-z]+ [A-Z][a-z]+)\s*(?:is hiring|is looking|at|from)/,
+  ];
+  for(const p of namePatterns){
+    const m = text.match(p);
+    if(m){ name = m[1]; break; }
+  }
+  // Company extraction
+  let company = '';
+  const companyPatterns = [
+    /(?:at|@|with|join|joining)\s+([A-Z][A-Za-z &]+(?:Ltd|Pvt|Inc|Corp|Motors|Systems|Technologies|Solutions|Group|India)?)/,
+    /([A-Z][A-Za-z &]+(?:Ltd\.?|Pvt\.?|Inc\.?|Corp\.?|Motors|Systems|Technologies|Solutions|Group|India))/,
+    /#(\w+)Hiring/i,
+  ];
+  for(const p of companyPatterns){
+    const m = text.match(p);
+    if(m){ company = m[1].trim(); break; }
+  }
+  // Role extraction
+  let role = '';
+  const rolePatterns = [
+    /(?:hiring|looking) (?:for|a)\s+([A-Za-z ()\/]+Engineer|Manager|Lead|Developer|Analyst|Architect|Consultant|Designer|Specialist)/i,
+    /(?:position|role|vacancy|opening)\s*(?:for|:)\s*([A-Za-z ()\/]+)/i,
+    /(?:#)([A-Za-z]+Engineer|[A-Za-z]+Manager|[A-Za-z]+Developer)/,
+  ];
+  for(const p of rolePatterns){
+    const m = text.match(p);
+    if(m){ role = m[1].trim(); break; }
+  }
+  // Build results
+  if(emails.length){
+    emails.forEach((email,i)=>{
+      results.push({
+        name: name||(i===0?name:''),
+        company, email,
+        phone: phones[i]||phones[0]||'',
+        designation: role,
+        notes: 'Extracted from LinkedIn post'
+      });
+    });
+  } else if(name||company||phones.length){
+    results.push({name,company,email:'',phone:phones[0]||'',designation:role,notes:'Extracted from LinkedIn post'});
+  }
+  return results;
+}
+
 async function extractHRDetails(){
   const text = document.getElementById('hrExtractText').value.trim();
   if(!text && !hrImageData){ alert('Please paste text or upload an image first.'); return; }
   const btn = document.getElementById('extractBtn');
   btn.disabled=true; btn.innerHTML='🧠 Extracting...';
-  document.getElementById('extractResult').innerHTML = '<div class="alert alert-info">🧠 AI is reading the content...</div>';
-  try{
-    let userContent;
-    const sys = `You are an HR contact extractor. Extract all HR/recruiter contact information from the provided content.
-Return ONLY valid JSON in this exact format, nothing else:
-{"contacts":[{"name":"Full Name","company":"Company Name","email":"email@example.com","phone":"+91 XXXXX XXXXX","designation":"Job Title","notes":"Any other relevant info"}]}
-If a field is not found, use empty string "". Extract ALL contacts found. If none found, return {"contacts":[]}.`;
+  document.getElementById('extractResult').innerHTML = '<div class="alert alert-info">🔍 Parsing content...</div>';
 
-    if(hrImageData){
-      userContent = [{type:'image',source:{type:'base64',media_type:hrImageType,data:hrImageData}},
-                     {type:'text',text: text ? 'Also check this text: '+text : 'Extract HR contacts from this image.'}];
+  // Step 1: Always run rule-based parser first (works without any API key)
+  let ruleResults = text ? parseLinkedInRuleBased(text) : [];
+
+  // Step 2: If no Groq key, show rule-based results and stop
+  const hasGroqKey = !!localStorage.getItem('jt2_groq_key');
+  if(!hasGroqKey){
+    if(ruleResults.length){
+      showExtractResults(ruleResults, 'rule-based');
     } else {
-      userContent = `Extract HR contacts from this text:\n\n${text}`;
+      document.getElementById('extractResult').innerHTML = `
+        <div class="alert alert-warn">
+          ⚠️ Could not auto-detect HR details from this text.<br>
+          <strong>Tip:</strong> Add a free Groq API key in Settings for AI-powered extraction that works on any post.
+        </div>`;
     }
-    const raw = await callClaude(sys, userContent, !!hrImageData);
-    const json = JSON.parse(raw.replace(/```json|```/g,'').trim());
-    if(!json.contacts || json.contacts.length===0){
-      document.getElementById('extractResult').innerHTML='<div class="alert alert-warn">No HR contact details found in the provided content. Try adding more text with name, email, or phone.</div>';
-      return;
+    btn.disabled=false; btn.innerHTML='🧠 Extract HR Details';
+    return;
+  }
+
+  // Step 3: Use Groq AI for enhanced extraction
+  document.getElementById('extractResult').innerHTML = '<div class="alert alert-info">🤖 AI enhancing extraction...</div>';
+  try{
+    const sys = `You are an HR contact extractor for LinkedIn posts and job descriptions.
+Extract all recruiter/HR contact information. Return ONLY valid JSON, no other text:
+{"contacts":[{"name":"Full Name","company":"Company Name","email":"email@example.com","phone":"+91 XXXXX XXXXX","designation":"Job Title","notes":""}]}
+Rules: extract ALL contacts found. Use "" for missing fields. Never invent data.`;
+    const prompt = `Extract all HR/recruiter contacts from this text:\n\n${text}`;
+    const raw = await callAI(sys, prompt);
+    let aiResults = [];
+    try{
+      const json = JSON.parse(raw.replace(/```json\n?|```/g,'').trim());
+      aiResults = (json.contacts||[]).filter(ct=>ct.name||ct.email||ct.company);
+    } catch(e2){ aiResults = []; }
+
+    // Merge: prefer AI results, fall back to rule-based
+    const finalResults = aiResults.length ? aiResults : ruleResults;
+    if(!finalResults.length){
+      document.getElementById('extractResult').innerHTML='<div class="alert alert-warn">⚠️ No HR contact details found. Paste a more complete post with recruiter name, email, or phone number.</div>';
+    } else {
+      showExtractResults(finalResults, aiResults.length ? 'ai' : 'rule-based');
     }
-    // Show extracted results with one-click save
-    document.getElementById('extractResult').innerHTML = `
-      <div style="font-size:13px;font-weight:600;color:var(--gold2);margin-bottom:10px">✅ Found ${json.contacts.length} contact(s):</div>
-      ${json.contacts.map((ct,i)=>`
-        <div style="background:var(--surface2);border:1px solid var(--border2);border-radius:10px;padding:14px;margin-bottom:10px">
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
-            <div><div style="font-size:10px;color:var(--text3);text-transform:uppercase">Name</div><div style="font-weight:600">${ct.name||'—'}</div></div>
-            <div><div style="font-size:10px;color:var(--text3);text-transform:uppercase">Company</div><div>${ct.company||'—'}</div></div>
-            <div><div style="font-size:10px;color:var(--text3);text-transform:uppercase">Email</div><div style="color:var(--gold)">${ct.email||'—'}</div></div>
-            <div><div style="font-size:10px;color:var(--text3);text-transform:uppercase">Phone</div><div>${ct.phone||'—'}</div></div>
-          </div>
-          <button class="btn btn-primary btn-sm" onclick="saveExtractedContact(${i}, ${JSON.stringify(ct).replace(/"/g,'&quot;')})">💾 Save to HR Contacts</button>
-        </div>`).join('')}`;
   } catch(e){
-    document.getElementById('extractResult').innerHTML=`<div class="alert alert-error">Error: ${e.message}. Make sure you are logged in.</div>`;
+    // AI failed → fall back to rule-based
+    if(ruleResults.length){
+      showExtractResults(ruleResults, 'rule-based');
+    } else {
+      document.getElementById('extractResult').innerHTML=`<div class="alert alert-error">❌ ${e.message}</div>`;
+    }
   }
   btn.disabled=false; btn.innerHTML='🧠 Extract HR Details';
 }
 
-function saveExtractedContact(i, ct){
-  if(!ct.name && !ct.company){ alert('Need at least a name or company to save.'); return; }
-  const data={id:uid(),name:ct.name||'Unknown',company:ct.company||'Unknown',
-    email:ct.email||'',phone:ct.phone||'',desig:ct.designation||'',
-    notes:ct.notes||'Extracted via AI',linkedin:'',lastContact:''};
-  contacts.unshift(data);
-  LS.set('jt2_contacts',contacts);
-  saveToCloud('contacts',data.id,data);
-  renderContacts(); populateDropdowns();
-  // Show confirmation in the result
-  const btns=document.querySelectorAll('#extractResult .btn-primary');
-  if(btns[i]){ btns[i].textContent='✅ Saved!'; btns[i].disabled=true; }
+function showExtractResults(cts, method){
+  if(!cts||!cts.length){
+    document.getElementById('extractResult').innerHTML='<div class="alert alert-warn">No contacts found in the provided text.</div>';
+    return;
+  }
+  window._extractedContacts = cts;
+  const badge = method==='ai'
+    ? '<span style="background:rgba(201,168,76,0.15);color:var(--gold);border:1px solid rgba(201,168,76,0.3);padding:2px 9px;border-radius:6px;font-size:11px;font-weight:600">🤖 AI Enhanced</span>'
+    : '<span style="background:rgba(74,144,217,0.12);color:var(--blue2);border:1px solid rgba(74,144,217,0.25);padding:2px 9px;border-radius:6px;font-size:11px;font-weight:600">⚡ Auto-detected</span>';
+  document.getElementById('extractResult').innerHTML = `
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+      <span style="font-size:13px;font-weight:600;color:var(--gold2)">✅ Found ${cts.length} contact(s)</span>
+      ${badge}
+    </div>
+    ${cts.map((ct,i)=>`
+      <div style="background:var(--surface2);border:1px solid var(--border2);border-radius:10px;padding:14px;margin-bottom:10px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+          <div><div style="font-size:10px;color:var(--text3);text-transform:uppercase;margin-bottom:2px">Name</div><div style="font-weight:600">${ct.name||'—'}</div></div>
+          <div><div style="font-size:10px;color:var(--text3);text-transform:uppercase;margin-bottom:2px">Company</div><div>${ct.company||'—'}</div></div>
+          <div><div style="font-size:10px;color:var(--text3);text-transform:uppercase;margin-bottom:2px">Email</div><div style="color:var(--gold)">${ct.email||'—'}</div></div>
+          <div><div style="font-size:10px;color:var(--text3);text-transform:uppercase;margin-bottom:2px">Phone</div><div>${ct.phone||'—'}</div></div>
+          ${ct.designation?`<div style="grid-column:1/-1"><div style="font-size:10px;color:var(--text3);text-transform:uppercase;margin-bottom:2px">Role</div><div>${ct.designation}</div></div>`:''}
+        </div>
+        <button class="btn btn-primary btn-sm" id="saveBtn_${i}" onclick="saveExtractedContact(${i},this)">💾 Save to HR Contacts</button>
+      </div>`).join('')}`;
 }
+
+
+function saveExtractedContact(i, btnEl){
+  const ct = (window._extractedContacts||[])[i];
+  if(!ct){ alert('Contact data missing. Please re-extract.'); return; }
+  if(!ct.name && !ct.company && !ct.email){ alert('Need at least a name, company, or email to save.'); return; }
+  const data = {
+    id:uid(), name:ct.name||'Unknown', company:ct.company||'Unknown',
+    email:ct.email||'', phone:ct.phone||'', desig:ct.designation||'',
+    notes:ct.notes||'Extracted from LinkedIn post', linkedin:'', lastContact:''
+  };
+  contacts.unshift(data);
+  LS.set('jt2_contacts', contacts);
+  saveToCloud('contacts', data.id, data);
+  renderContacts(); populateDropdowns();
+  if(btnEl && btnEl.tagName==='BUTTON'){
+    btnEl.textContent='✅ Saved!'; btnEl.disabled=true;
+    btnEl.className='btn btn-success btn-sm';
+  }
+}
+
 
 function clearExtractor(){
   document.getElementById('hrExtractText').value='';
