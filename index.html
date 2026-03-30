@@ -331,6 +331,7 @@ body.theme-light .card-gold { background: linear-gradient(135deg,#ffffff 0%,rgba
   <div class="nav-item" onclick="nav('jobs',this)">💼 Jobs <span class="nav-badge" id="jobBadge">0</span></div>
   <div class="nav-item" onclick="nav('contacts',this)">👥 HR Contacts</div>
   <div class="nav-item" onclick="nav('email',this)">📧 Send Email</div>
+  <div class="nav-item" onclick="nav('bulk',this)">📨 Bulk Email</div>
   <div class="nav-item" onclick="nav('templates',this)">📝 Templates</div>
   <div class="nav-item" onclick="nav('resume',this)">📎 My CV</div>
   <div class="nav-item" onclick="nav('tools',this)">🤖 AI Tools</div>
@@ -399,6 +400,100 @@ body.theme-light .card-gold { background: linear-gradient(135deg,#ffffff 0%,rgba
     <div id="jobsPagination"></div>
   </div>
 </div>
+
+<!-- BULK EMAIL PAGE -->
+<div class="page" id="page-bulk">
+  <div class="card card-gold">
+    <div class="card-header">
+      <div class="card-title"><span class="card-title-icon">📨</span>Bulk Email to Multiple HRs</div>
+    </div>
+    <div class="alert alert-info" style="font-size:13px">
+      Select HR contacts → choose a template → each email is <strong>personalised automatically</strong> with the HR's name → preview all → send with one click.
+    </div>
+
+    <!-- STEP 1: SELECT CONTACTS -->
+    <div style="margin-bottom:20px">
+      <div style="font-size:13px;font-weight:700;color:var(--gold2);margin-bottom:10px">Step 1 — Select HR Contacts</div>
+      <div class="filter-bar" style="margin-bottom:10px">
+        <input type="text" id="bulkSearch" placeholder="🔍 Filter contacts..." oninput="renderBulkContactList()">
+        <select id="bulkEmailFilter" onchange="renderBulkContactList()">
+          <option value="">All Contacts</option>
+          <option value="unsent">❌ Not Yet Emailed Only</option>
+          <option value="sent">✅ Already Emailed</option>
+        </select>
+      </div>
+      <div style="display:flex;gap:10px;margin-bottom:10px;flex-wrap:wrap">
+        <button class="btn btn-secondary btn-sm" onclick="bulkSelectAll()">☑ Select All Visible</button>
+        <button class="btn btn-secondary btn-sm" onclick="bulkSelectNone()">☐ Deselect All</button>
+        <button class="btn btn-secondary btn-sm" onclick="bulkSelectUnsent()">⚡ Select Not Yet Emailed</button>
+        <span id="bulkSelCount" style="font-size:13px;color:var(--text2);align-self:center">0 selected</span>
+      </div>
+      <div id="bulkContactList" style="max-height:280px;overflow-y:auto;border:1px solid var(--border);border-radius:10px"></div>
+    </div>
+
+    <!-- STEP 2: TEMPLATE + CUSTOMISE -->
+    <div style="margin-bottom:20px">
+      <div style="font-size:13px;font-weight:700;color:var(--gold2);margin-bottom:10px">Step 2 — Choose Template & Customise</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Email Template</label>
+          <select id="bulkTemplateSelect" onchange="loadBulkTemplate()">
+            <option value="">— Select template —</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Job Role (fills {{role}} in template)</label>
+          <input type="text" id="bulkRole" placeholder="e.g. Senior Engineer – Automotive">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Subject Line
+          <span style="font-size:10px;color:var(--text3);font-weight:400;text-transform:none;letter-spacing:0;margin-left:6px">
+            Variables: {{hrname}} = HR first name &nbsp;·&nbsp; {{company}} = HR company &nbsp;·&nbsp; {{role}} = role above
+          </span>
+        </label>
+        <input type="text" id="bulkSubject" placeholder="Application for {{role}} – {{name}} | {{exp}}">
+      </div>
+      <div class="form-group">
+        <label>Email Body
+          <span style="font-size:10px;color:var(--text3);font-weight:400;text-transform:none;letter-spacing:0;margin-left:6px">
+            Use {{hrname}} for HR's first name — auto-filled per contact
+          </span>
+        </label>
+        <textarea id="bulkBody" rows="9" placeholder="Dear {{hrname}},&#10;&#10;I am writing to express my interest in the {{role}} position at {{company}}..."></textarea>
+      </div>
+      <div class="form-group">
+        <label>📎 CV to attach</label>
+        <select id="bulkCVSelect" style="max-width:300px"></select>
+        <span id="bulkCVInfo" style="font-size:12px;color:var(--text3);margin-left:8px"></span>
+      </div>
+    </div>
+
+    <!-- STEP 3: PREVIEW -->
+    <div style="margin-bottom:20px">
+      <div style="font-size:13px;font-weight:700;color:var(--gold2);margin-bottom:10px">Step 3 — Preview All Emails</div>
+      <button class="btn btn-secondary" onclick="generateBulkPreview()" id="bulkPreviewBtn">👁 Generate Preview</button>
+      <div id="bulkPreviewTable" style="margin-top:12px"></div>
+    </div>
+
+    <!-- STEP 4: SEND -->
+    <div>
+      <div style="font-size:13px;font-weight:700;color:var(--gold2);margin-bottom:10px">Step 4 — Send</div>
+      <div id="bulkGmailWarn" class="alert alert-warn" style="display:none">⚠️ Gmail not connected. <a href="#" onclick="showSetup('gmail')" style="color:var(--gold);font-weight:700">Connect Gmail →</a></div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+        <button class="btn btn-primary" onclick="sendBulkEmails()" id="bulkSendBtn" style="font-size:14px;padding:10px 22px">
+          📨 Send to All Selected HRs
+        </button>
+        <div style="font-size:13px;color:var(--text3)">
+          Emails sent one by one with a 2-second delay to avoid spam filters
+        </div>
+      </div>
+      <div id="bulkProgress" style="margin-top:14px"></div>
+      <div id="bulkResult" style="margin-top:8px"></div>
+    </div>
+  </div>
+</div>
+
 
 <!-- CONTACTS -->
 <div class="page" id="page-contacts">
@@ -1446,6 +1541,7 @@ function nav(id,el){
   if(id==='email'){ renderEmailPage(); startAutoSave(); }
   if(id==='dashboard')renderDashboard();
   if(id==='tools')updateAIKeyBanner();
+  if(id==='bulk')initBulkPage();
 }
 
 // ============================================================
@@ -2675,6 +2771,359 @@ function exportContactsCSV(){
   a.href = URL.createObjectURL(blob);
   a.download = 'HR_Contacts_'+new Date().toISOString().split('T')[0]+'.csv';
   a.click();
+}
+
+
+// ============================================================
+// BULK EMAIL ENGINE
+// ============================================================
+
+// ── Name Resolution — 3-layer approach ──────────────────────
+function resolveHRName(emailOrContact){
+  // Layer 1: exact match in contacts database
+  if(typeof emailOrContact === 'object'){
+    const stored = emailOrContact.name;
+    if(stored && stored !== 'Unknown' && stored.length > 1){
+      return stored.split(' ')[0]; // first name only
+    }
+    // fall through to email parsing
+    emailOrContact = emailOrContact.email || '';
+  }
+  const email = (emailOrContact||'').toLowerCase().trim();
+  if(!email) return 'Hiring Team';
+
+  // Layer 2: parse name from email local part
+  const GENERIC = ['hr','recruitment','recruit','careers','career','jobs','job',
+                   'hiring','talent','apply','info','contact','noreply','no-reply',
+                   'hello','admin','team','support','staffing'];
+  const local = email.split('@')[0]; // e.g. "priya.sharma" from priya.sharma@tata.com
+  const parts = local.split(/[._\-+]/).filter(p => p.length > 1);
+
+  // Check if it's a generic address
+  if(parts.length === 0 || GENERIC.includes(parts[0])) return 'Hiring Team';
+  if(parts.every(p => GENERIC.includes(p))) return 'Hiring Team';
+
+  // Capitalise and return first meaningful part(s)
+  const meaningful = parts.filter(p => !GENERIC.includes(p) && isNaN(p));
+  if(!meaningful.length) return 'Hiring Team';
+  const firstName = meaningful[0].charAt(0).toUpperCase() + meaningful[0].slice(1);
+  const lastName  = meaningful[1] ? meaningful[1].charAt(0).toUpperCase() + meaningful[1].slice(1) : '';
+  return lastName ? firstName + ' ' + lastName : firstName;
+}
+
+// ── Template variable fill with HR personalisation ──────────
+function fillBulkVars(text, hrName, hrCompany, role){
+  return fillVars(text, {role, company: hrCompany||'[Company]'})
+    .replace(/{{hrname}}/gi,  hrName)
+    .replace(/Dear Hiring Team,/g, `Dear ${hrName},`)
+    .replace(/{{hrcompany}}/gi, hrCompany||'[Company]');
+}
+
+// ── Render selectable contact list ──────────────────────────
+let bulkSelected = new Set();
+
+function renderBulkContactList(){
+  const q       = (document.getElementById('bulkSearch')?.value||'').toLowerCase();
+  const filter  = document.getElementById('bulkEmailFilter')?.value||'';
+  let list = contacts.filter(ct => {
+    const matchQ = !q || ct.name.toLowerCase().includes(q) || ct.company.toLowerCase().includes(q) || (ct.email||'').toLowerCase().includes(q);
+    if(!matchQ) return false;
+    const es = getContactEmailStatus(ct.email);
+    if(filter==='unsent' && es.sent)  return false;
+    if(filter==='sent'   && !es.sent) return false;
+    return true;
+  });
+
+  const el = document.getElementById('bulkContactList');
+  if(!list.length){
+    el.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text3)">No contacts match the filter</div>';
+    updateBulkCount(); return;
+  }
+
+  el.innerHTML = list.map(ct => {
+    const es      = getContactEmailStatus(ct.email);
+    const checked = bulkSelected.has(ct.id);
+    const hrName  = resolveHRName(ct);
+    const badge   = es.sent
+      ? `<span style="font-size:10px;background:rgba(52,211,153,0.12);color:var(--green);border:1px solid rgba(52,211,153,0.3);padding:1px 7px;border-radius:8px">✉ ${es.count} sent</span>`
+      : `<span style="font-size:10px;background:rgba(248,113,113,0.1);color:var(--red);border:1px solid rgba(248,113,113,0.25);padding:1px 7px;border-radius:8px">✕ not sent</span>`;
+    const nameResolved = `<span style="font-size:11px;color:var(--text3)" title="How HR will be greeted">→ Dear <strong>${hrName},</strong></span>`;
+    return `
+      <div style="display:flex;align-items:center;gap:12px;padding:10px 14px;border-bottom:1px solid var(--border);${checked?'background:rgba(201,168,76,0.06)':''}" 
+           onclick="bulkToggle('${ct.id}')" style="cursor:pointer">
+        <input type="checkbox" ${checked?'checked':''} onchange="bulkToggle('${ct.id}')" onclick="event.stopPropagation()" style="width:15px;height:15px;accent-color:var(--gold)">
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <span style="font-weight:600;font-size:13px">${ct.name}</span>
+            <span style="font-size:12px;color:var(--text3)">${ct.company}</span>
+            ${badge}
+          </div>
+          <div style="font-size:12px;color:var(--text3);margin-top:2px;display:flex;gap:10px;align-items:center">
+            <span>${ct.email}</span>
+            ${nameResolved}
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+  updateBulkCount();
+}
+
+function bulkToggle(id){
+  if(bulkSelected.has(id)) bulkSelected.delete(id);
+  else bulkSelected.add(id);
+  renderBulkContactList();
+}
+
+function bulkSelectAll(){
+  // Select all currently visible contacts
+  const q      = (document.getElementById('bulkSearch')?.value||'').toLowerCase();
+  const filter = document.getElementById('bulkEmailFilter')?.value||'';
+  contacts.forEach(ct=>{
+    const matchQ = !q || ct.name.toLowerCase().includes(q) || ct.company.toLowerCase().includes(q);
+    const es = getContactEmailStatus(ct.email);
+    if(filter==='unsent' && es.sent)  return;
+    if(filter==='sent'   && !es.sent) return;
+    if(matchQ) bulkSelected.add(ct.id);
+  });
+  renderBulkContactList();
+}
+
+function bulkSelectNone(){ bulkSelected.clear(); renderBulkContactList(); }
+
+function bulkSelectUnsent(){
+  bulkSelected.clear();
+  contacts.forEach(ct=>{ if(!getContactEmailStatus(ct.email).sent) bulkSelected.add(ct.id); });
+  renderBulkContactList();
+}
+
+function updateBulkCount(){
+  const el = document.getElementById('bulkSelCount');
+  if(el) el.textContent = bulkSelected.size + ' selected';
+}
+
+// ── Load template into bulk fields ──────────────────────────
+function loadBulkTemplate(){
+  const id = document.getElementById('bulkTemplateSelect')?.value;
+  if(!id) return;
+  const t = templates.find(x=>x.id===id);
+  if(!t) return;
+  // Replace {{role}} with current bulkRole value or leave for user to fill
+  const role = document.getElementById('bulkRole')?.value||'{{role}}';
+  document.getElementById('bulkSubject').value = (t.subject||'').replace(/{{role}}/g, role);
+  let body = t.body||'';
+  // Replace "Dear Hiring Team," with {{hrname}} placeholder
+  body = body.replace(/Dear Hiring Team,/gi, 'Dear {{hrname}},');
+  document.getElementById('bulkBody').value = body;
+}
+
+// ── Preview all personalised emails ─────────────────────────
+function generateBulkPreview(){
+  const subject = document.getElementById('bulkSubject').value.trim();
+  const body    = document.getElementById('bulkBody').value.trim();
+  const role    = document.getElementById('bulkRole').value.trim();
+  if(!subject || !body){ alert('Please fill in Subject and Body first.'); return; }
+  if(!bulkSelected.size){ alert('Please select at least one HR contact.'); return; }
+
+  const selected = contacts.filter(ct => bulkSelected.has(ct.id));
+  const tableEl  = document.getElementById('bulkPreviewTable');
+
+  tableEl.innerHTML = `
+    <div style="font-size:13px;font-weight:600;color:var(--gold2);margin-bottom:10px">
+      Preview — ${selected.length} personalised email(s):
+    </div>
+    <div style="border:1px solid var(--border);border-radius:10px;overflow:hidden">
+      <table style="width:100%;border-collapse:collapse">
+        <thead>
+          <tr style="background:var(--surface2)">
+            <th style="padding:9px 14px;text-align:left;font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid var(--border)">#</th>
+            <th style="padding:9px 14px;text-align:left;font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid var(--border)">To</th>
+            <th style="padding:9px 14px;text-align:left;font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid var(--border)">Greeting</th>
+            <th style="padding:9px 14px;text-align:left;font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid var(--border)">Subject Preview</th>
+            <th style="padding:9px 14px;text-align:left;font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid var(--border)">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${selected.map((ct,i)=>{
+            const hrName  = resolveHRName(ct);
+            const co      = ct.company||'';
+            const subj    = fillBulkVars(subject, hrName, co, role);
+            const bodyPre = fillBulkVars(body, hrName, co, role);
+            return `<tr style="border-bottom:1px solid var(--border)">
+              <td style="padding:10px 14px;font-size:13px;color:var(--text3)">${i+1}</td>
+              <td style="padding:10px 14px">
+                <div style="font-weight:600;font-size:13px">${ct.name}</div>
+                <div style="font-size:11px;color:var(--text3)">${ct.email}</div>
+              </td>
+              <td style="padding:10px 14px">
+                <span style="background:rgba(201,168,76,0.12);color:var(--gold);border:1px solid rgba(201,168,76,0.25);padding:3px 9px;border-radius:6px;font-size:12px;font-weight:600">
+                  Dear ${hrName},
+                </span>
+              </td>
+              <td style="padding:10px 14px;font-size:12px;color:var(--text2);max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${subj}</td>
+              <td style="padding:10px 14px">
+                <button class="btn btn-secondary btn-sm" onclick="bulkPreviewOne(${i},'${ct.id}')" title="Preview full email">👁</button>
+                <button class="btn btn-danger btn-sm" onclick="bulkRemoveOne('${ct.id}')" title="Remove from list">✕</button>
+              </td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>
+    <div class="alert alert-info" style="margin-top:10px;font-size:12px">
+      💡 The greeting <strong>Dear ${'{HR Name}'},</strong> is auto-filled for each contact. Check any row by clicking 👁 to see the full personalised email.
+    </div>`;
+
+  // Store preview data for sending
+  window._bulkPreviewData = selected.map(ct=>({
+    ct,
+    hrName:  resolveHRName(ct),
+    subject: fillBulkVars(subject, resolveHRName(ct), ct.company||'', role),
+    body:    fillBulkVars(body,    resolveHRName(ct), ct.company||'', role),
+  }));
+}
+
+// Preview one email in detail
+function bulkPreviewOne(i, ctId){
+  const data = (window._bulkPreviewData||[])[i];
+  if(!data){ alert('Please click "Generate Preview" first.'); return; }
+  const cv = getSelectedCV ? getSelectedCV() : null;
+  const cvLine = cv ? `\n📎 CV: ${cv.label}` : '';
+  document.getElementById('previewContent').innerHTML =
+    `<div style="margin-bottom:12px"><div style="font-size:10px;color:var(--text3);text-transform:uppercase;margin-bottom:3px">To</div>
+     <div style="font-weight:600">${data.ct.name} &lt;${data.ct.email}&gt;</div></div>
+     <div style="margin-bottom:12px"><div style="font-size:10px;color:var(--text3);text-transform:uppercase;margin-bottom:3px">Subject</div>
+     <div style="font-weight:600">${data.subject}</div></div>
+     <div style="font-size:10px;color:var(--text3);text-transform:uppercase;margin-bottom:6px">Body</div>
+     <div style="white-space:pre-wrap;font-size:13px;color:var(--text2);line-height:1.7;background:var(--surface3);padding:14px;border-radius:8px;max-height:320px;overflow-y:auto">${data.body}</div>
+     <div style="margin-top:10px;font-size:12px;color:var(--text3)">${cvLine}</div>`;
+  // Override send button to just close (don't send just one from bulk flow)
+  const sendBtn = document.getElementById('previewSendBtn');
+  if(sendBtn){ sendBtn.style.display='none'; }
+  openModal('mPreview');
+  // Restore send button when modal closes
+  document.getElementById('mPreview').addEventListener('click', ()=>{
+    if(sendBtn) sendBtn.style.display='';
+  },{once:true});
+}
+
+function bulkRemoveOne(id){
+  bulkSelected.delete(id);
+  renderBulkContactList();
+  generateBulkPreview();
+}
+
+// ── SEND BULK EMAILS ─────────────────────────────────────────
+async function sendBulkEmails(){
+  if(!gmailToken){ document.getElementById('bulkGmailWarn').style.display='flex'; return; }
+  if(!window._bulkPreviewData || !window._bulkPreviewData.length){
+    alert('Please click "Generate Preview" first to review your emails before sending.'); return;
+  }
+  const data = window._bulkPreviewData;
+  const confirmed = confirm(`📨 Send ${data.length} personalised emails?\n\nEach HR will receive a separate email addressed to them by name.\n\nThis cannot be undone. Proceed?`);
+  if(!confirmed) return;
+
+  const btn      = document.getElementById('bulkSendBtn');
+  const progress = document.getElementById('bulkProgress');
+  const result   = document.getElementById('bulkResult');
+  btn.disabled   = true;
+  let sent=0, failed=0, failedList=[];
+
+  const cv = getSelectedCV ? getSelectedCV() : null;
+  const useCVData = cv ? cv.data : cvData;
+  const useCVName = cv ? cv.name : cvName;
+  const attachCL  = clData||clDefaultData;
+  const attachCLN = clName||clDefaultName;
+
+  for(let i=0; i<data.length; i++){
+    const {ct, subject, body} = data[i];
+    progress.innerHTML = `
+      <div style="margin-bottom:8px">
+        <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px">
+          <span>Sending to <strong>${ct.name}</strong> (${i+1}/${data.length})</span>
+          <span style="color:var(--text3)">${sent} sent · ${failed} failed</span>
+        </div>
+        <div class="prog-bar"><div class="prog-fill" style="width:${((i)/data.length*100).toFixed(0)}%"></div></div>
+      </div>`;
+
+    try{
+      const raw = useCVData
+        ? buildEmailMultipart(ct.email, subject, body, useCVData, useCVName, attachCL, attachCLN)
+        : buildSimpleEmail(ct.email, subject, body);
+      const resp = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send',{
+        method:'POST',
+        headers:{'Authorization':'Bearer '+gmailToken,'Content-Type':'application/json'},
+        body:JSON.stringify({raw})
+      });
+      if(resp.ok){
+        sent++;
+        // Log to sentLog
+        const entry={id:uid(),date:new Date().toISOString(),to:ct.email,
+          subject,job:'',hasCv:!!useCVData,hasCL:!!attachCL,isBulk:true};
+        sentLog.unshift(entry);
+        LS.set('jt2_sent',sentLog);
+        saveToCloud('sent',entry.id,entry);
+      } else {
+        const err=await resp.json().catch(()=>({}));
+        if(resp.status===401){ gmailToken=null; updateGmailStatus(false); break; }
+        failed++; failedList.push(ct.name+' ('+((err.error||{}).message||resp.status)+')');
+      }
+    } catch(e){
+      failed++; failedList.push(ct.name+' ('+e.message+')');
+    }
+    // 2-second delay between emails to avoid Gmail rate limits
+    if(i < data.length-1) await new Promise(r=>setTimeout(r,2000));
+  }
+
+  // Final progress bar
+  progress.innerHTML = `
+    <div>
+      <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px">
+        <span>Complete</span><span>${sent} sent · ${failed} failed</span>
+      </div>
+      <div class="prog-bar"><div class="prog-fill" style="width:100%"></div></div>
+    </div>`;
+
+  result.innerHTML = sent>0
+    ? `<div class="alert alert-success">✅ Successfully sent ${sent} personalised email${sent>1?'s':''}!</div>`
+    : '';
+  if(failedList.length){
+    result.innerHTML += `<div class="alert alert-error">❌ Failed (${failed}): ${failedList.join(', ')}</div>`;
+  }
+
+  btn.disabled = false;
+  renderContacts(); renderSentLog(); renderDashboard();
+  window._bulkPreviewData = null;
+  bulkSelected.clear();
+  renderBulkContactList();
+}
+
+// ── Init bulk email page ─────────────────────────────────────
+function initBulkPage(){
+  // Populate template select
+  const tsel = document.getElementById('bulkTemplateSelect');
+  if(tsel){
+    tsel.innerHTML = '<option value="">— Select template —</option>'
+      + templates.map(t=>`<option value="${t.id}">${t.name}</option>`).join('');
+  }
+  // Populate CV select
+  const csel = document.getElementById('bulkCVSelect');
+  if(csel){
+    if(cvVersions&&cvVersions.length){
+      csel.innerHTML = cvVersions.map(v=>`<option value="${v.id}" ${v.isDefault?'selected':''}>${v.label}</option>`).join('');
+      document.getElementById('bulkCVInfo').textContent = '✅ Will be attached';
+    } else if(cvData){
+      csel.innerHTML = `<option value="__legacy__">${cvName||'CV'}</option>`;
+      document.getElementById('bulkCVInfo').textContent = '✅ Will be attached';
+    } else {
+      csel.innerHTML = '<option value="">No CV uploaded</option>';
+      document.getElementById('bulkCVInfo').textContent = '⚠️ Upload CV in My CV tab';
+    }
+  }
+  // Gmail warning
+  const warn = document.getElementById('bulkGmailWarn');
+  if(warn) warn.style.display = gmailToken ? 'none' : 'flex';
+  bulkSelected.clear();
+  renderBulkContactList();
 }
 
 // ============================================================
