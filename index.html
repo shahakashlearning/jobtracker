@@ -1240,11 +1240,19 @@ body.theme-light .card-gold { background: linear-gradient(135deg,#ffffff 0%,rgba
 // ============================================================
 // DATA LAYER — Local + Firebase sync
 // ============================================================
+// Safe localStorage wrapper — handles SecurityError in sandboxed environments
+const _lsAvailable = (()=>{ try{ localStorage.setItem('_t','1'); localStorage.removeItem('_t'); return true; }catch(e){ return false; } })();
 const LS = {
-  get:(k,d=[])=>{try{return JSON.parse(localStorage.getItem(k))||d;}catch{return d;}},
-  set:(k,v)=>localStorage.setItem(k,JSON.stringify(v)),
-  getObj:(k,d={})=>{try{return JSON.parse(localStorage.getItem(k))||d;}catch{return d;}}
+  get:(k,d=[])=>{ if(!_lsAvailable)return d; try{return JSON.parse(localStorage.getItem(k))||d;}catch{return d;} },
+  set:(k,v)=>{ if(!_lsAvailable)return; try{localStorage.setItem(k,JSON.stringify(v));}catch(e){} },
+  getObj:(k,d={})=>{ if(!_lsAvailable)return d; try{return JSON.parse(localStorage.getItem(k))||d;}catch{return d;} }
 };
+
+// Sandbox-safe direct localStorage access
+function lsGet(k){ if(!_lsAvailable)return null; try{return localStorage.getItem(k);}catch(e){return null;} }
+function lsSet(k,v){ if(!_lsAvailable)return; try{localStorage.setItem(k,v);}catch(e){} }
+function lsRemove(k){ if(!_lsAvailable)return; try{localStorage.removeItem(k);}catch(e){} }
+
 
 let jobs=LS.get('jt2_jobs');
 let contacts=LS.get('jt2_contacts');
@@ -1254,14 +1262,14 @@ let goals=LS.get('jt2_goals');
 let journal=LS.get('jt2_journal');
 let visionImages=LS.get('jt2_vision');
 let profile=LS.getObj('jt2_profile');
-let cvData=localStorage.getItem('jt2_cv')||null;
-let cvName=localStorage.getItem('jt2_cvname')||null;
-let clData=localStorage.getItem('jt2_cl')||null;
-let clName=localStorage.getItem('jt2_clname')||null;
-let clDefaultData=localStorage.getItem('jt2_cld')||null;
-let clDefaultName=localStorage.getItem('jt2_cldname')||null;
+let cvData=lsGet('jt2_cv')||null;
+let cvName=lsGet('jt2_cvname')||null;
+let clData=lsGet('jt2_cl')||null;
+let clName=lsGet('jt2_clname')||null;
+let clDefaultData=lsGet('jt2_cld')||null;
+let clDefaultName=lsGet('jt2_cldname')||null;
 let gmailToken=null;
-let clientId=localStorage.getItem('jt2_clientid')||'';
+let clientId=lsGet('jt2_clientid')||'';
 let fbConfig=LS.getObj('jt2_fbconfig');
 // db and fb_state live inside FB object below — do not reference loose vars
 
@@ -1420,7 +1428,7 @@ async function syncFromCloud(){
     renderAll();
     const now=new Date();
     const timeStr=now.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
-    localStorage.setItem('jt2_lastSync',now.toISOString());
+    lsSet('jt2_lastSync',now.toISOString());
     updateLastSyncUI();
     fbShowMsg('✅ Sync complete at '+timeStr+' — all data is up to date.', 'success');
   } catch(e){
@@ -1432,7 +1440,7 @@ async function syncFromCloud(){
 function updateLastSyncUI(){
   const el=document.getElementById('lastSyncTime');
   if(!el)return;
-  const saved=localStorage.getItem('jt2_lastSync');
+  const saved=lsGet('jt2_lastSync');
   if(!saved){el.textContent='Never synced';return;}
   const d=new Date(saved);
   const diff=Math.round((Date.now()-d.getTime())/60000);
@@ -2003,8 +2011,8 @@ function handleCLUpload(event){
   reader.onload=e=>{
     clData=e.target.result.split(',')[1];clName=file.name;
     // Persist so it survives page refresh
-    localStorage.setItem('jt2_cl',clData);
-    localStorage.setItem('jt2_clname',clName);
+    lsSet('jt2_cl',clData);
+    lsSet('jt2_clname',clName);
     document.getElementById('clStatus').innerHTML=`<span class="cl-chip">📄 ${file.name}</span>`;
   };
   reader.readAsDataURL(file);
@@ -2016,7 +2024,7 @@ function handleCLDefaultUpload(event){
   const reader=new FileReader();
   reader.onload=e=>{
     clDefaultData=e.target.result.split(',')[1];clDefaultName=file.name;
-    localStorage.setItem('jt2_cld',clDefaultData);localStorage.setItem('jt2_cldname',clDefaultName);
+    lsSet('jt2_cld',clDefaultData);lsSet('jt2_cldname',clDefaultName);
     const zone=document.getElementById('clZone');zone.classList.add('has');
     document.getElementById('clZoneText').textContent='✅ '+file.name;
     document.getElementById('clDefaultStatus').innerHTML=`<div class="alert alert-success">✅ ${file.name} saved as default cover letter</div>`;
@@ -2206,7 +2214,7 @@ function handleCVUpload(event){
   const reader=new FileReader();
   reader.onload=e=>{
     cvData=e.target.result.split(',')[1];cvName=file.name;
-    localStorage.setItem('jt2_cv',cvData);localStorage.setItem('jt2_cvname',cvName);
+    lsSet('jt2_cv',cvData);lsSet('jt2_cvname',cvName);
     updateCVStatus();
   };
   reader.readAsDataURL(file);
@@ -2281,7 +2289,7 @@ function saveGoal(){
 }
 
 function renderGoals(){
-  const mainGoal=localStorage.getItem('jt2_maingoal');
+  const mainGoal=lsGet('jt2_maingoal');
   if(mainGoal) document.getElementById('goalDisplay').innerHTML=`<div style="font-family:'Playfair Display',serif;font-size:16px;color:var(--gold3);line-height:1.6;padding:12px;background:rgba(201,168,76,0.05);border-radius:8px;border-left:3px solid var(--gold)">"${mainGoal}"</div>`;
   const el = document.getElementById('goalsList');
   if(!goals.length){
@@ -2437,7 +2445,7 @@ function deleteVisionImg(id){
 function connectGmail(){
   const id=document.getElementById('clientIdInput').value.trim();
   if(!id){showMsg('gmailMsg','Enter Client ID first','error');return;}
-  clientId=id;localStorage.setItem('jt2_clientid',clientId);
+  clientId=id;lsSet('jt2_clientid',clientId);
   if(!window.google){showMsg('gmailMsg','Google Sign-In library not loaded','error');return;}
   const tc=google.accounts.oauth2.initTokenClient({
     client_id:clientId,scope:'https://www.googleapis.com/auth/gmail.send',
@@ -2452,7 +2460,7 @@ function connectGmail(){
 
 function saveClientId(){
   const id=document.getElementById('clientIdInput').value.trim();
-  clientId=id;localStorage.setItem('jt2_clientid',id);
+  clientId=id;lsSet('jt2_clientid',id);
   showMsg('gmailMsg','✅ Client ID saved!','success');
 }
 
@@ -2486,7 +2494,7 @@ function importConfigFile(event){
       if(cfg.gmailClientId){
         document.getElementById('clientIdInput').value=cfg.gmailClientId;
         clientId=cfg.gmailClientId;
-        localStorage.setItem('jt2_clientid',clientId);
+        lsSet('jt2_clientid',clientId);
       }
       const fbCfg={
         apiKey:cfg.apiKey||'',authDomain:cfg.authDomain||'',
@@ -2663,7 +2671,7 @@ function saveGroqKey(){
   const key = document.getElementById('anthropicKeyInput').value.trim();
   if(!key){ showMsg('apiKeyTestResult','Please enter your Groq API key','error'); return; }
   if(!key.startsWith('gsk_')){ showMsg('apiKeyTestResult','Invalid key format. Groq API keys start with gsk_  — get one free at console.groq.com','error'); return; }
-  localStorage.setItem('jt2_groq_key', key);
+  lsSet('jt2_groq_key', key);
   document.getElementById('apiKeyStatus').innerHTML='<span style="color:var(--green)">✅ Groq key saved — testing now...</span>';
   testGroqKey();
 }
@@ -2673,7 +2681,7 @@ const saveAnthropicKey = saveGroqKey;
 
 function clearGroqKey(){
   if(!confirm('Remove Groq API key?'))return;
-  localStorage.removeItem('jt2_groq_key');
+  lsRemove('jt2_groq_key');
   document.getElementById('anthropicKeyInput').value='';
   document.getElementById('apiKeyStatus').innerHTML='<span style="color:var(--red)">❌ API key removed</span>';
   document.getElementById('apiKeyTestResult').innerHTML='';
@@ -2689,7 +2697,7 @@ function toggleKeyVisibility(){
 }
 
 async function testGroqKey(){
-  const key = localStorage.getItem('jt2_groq_key');
+  const key = lsGet('jt2_groq_key');
   if(!key){ showMsg('apiKeyTestResult','No key saved yet. Enter and save your key first.','error'); return; }
   showMsg('apiKeyTestResult','🔄 Testing Groq connection...','info');
   try{
@@ -2721,12 +2729,12 @@ const testAnthropicKey = testGroqKey;
 function updateAIKeyBanner(){
   const banner = document.getElementById('aiKeyBanner');
   if(!banner)return;
-  const hasKey = !!localStorage.getItem('jt2_groq_key');
+  const hasKey = !!lsGet('jt2_groq_key');
   banner.style.display = hasKey ? 'none' : 'flex';
 }
 
 function initApiKeyUI(){
-  const saved = localStorage.getItem('jt2_groq_key');
+  const saved = lsGet('jt2_groq_key');
   const inp = document.getElementById('anthropicKeyInput');
   if(saved && inp){
     inp.value = saved;
@@ -3131,13 +3139,13 @@ function initBulkPage(){
 // ============================================================
 function toggleTheme(){
   const isLight=document.body.classList.toggle('theme-light');
-  localStorage.setItem('jt2_theme', isLight?'light':'dark');
+  lsSet('jt2_theme', isLight?'light':'dark');
   const btn=document.getElementById('themeToggleBtn');
   if(btn)btn.innerHTML=isLight?'🌙 Dark':'☀️ Light';
 }
 
 function loadTheme(){
-  const saved=localStorage.getItem('jt2_theme');
+  const saved=lsGet('jt2_theme');
   if(saved==='light'){
     document.body.classList.add('theme-light');
     const btn=document.getElementById('themeToggleBtn');
@@ -3161,7 +3169,7 @@ function pinHash(pin){ // Simple hash — not cryptographic but sufficient for l
 }
 
 function initPin(){
-  const stored = localStorage.getItem('jt2_pin');
+  const stored = lsGet('jt2_pin');
   const overlay = document.getElementById('pinOverlay');
   const note = document.getElementById('pinNote');
   if(!stored){
@@ -3203,7 +3211,7 @@ function processPIN(){
   const note = document.getElementById('pinNote');
 
   if(mode === 'verify'){
-    const stored = localStorage.getItem('jt2_pin');
+    const stored = lsGet('jt2_pin');
     if(pinHash(pinBuffer) === stored){
       overlay.classList.add('hidden');
       pinLocked = false;
@@ -3228,7 +3236,7 @@ function processPIN(){
   } else if(step === '2'){
     const first = overlay.getAttribute('data-temp');
     if(pinBuffer === first){
-      localStorage.setItem('jt2_pin', pinHash(pinBuffer));
+      lsSet('jt2_pin', pinHash(pinBuffer));
       overlay.classList.add('hidden');
       pinLocked = false;
       resetAutoLock();
@@ -3251,7 +3259,7 @@ function skipPin(){
 
 function forgotPin(){
   if(confirm('Reset PIN? This will clear your PIN. Your data stays intact.')){
-    localStorage.removeItem('jt2_pin');
+    lsRemove('jt2_pin');
     location.reload();
   }
 }
@@ -3260,7 +3268,7 @@ function lockApp(){
   pinBuffer = '';
   updatePinDots();
   document.getElementById('pinMsg').textContent = '';
-  const stored = localStorage.getItem('jt2_pin');
+  const stored = lsGet('jt2_pin');
   const note = document.getElementById('pinNote');
   if(stored){
     document.getElementById('pinOverlay').setAttribute('data-mode','verify');
@@ -3272,7 +3280,7 @@ function lockApp(){
 
 function resetAutoLock(){
   clearTimeout(pinAutoLockTimer);
-  if(localStorage.getItem('jt2_pin')){
+  if(lsGet('jt2_pin')){
     pinAutoLockTimer = setTimeout(()=>{ if(!pinLocked) lockApp(); }, PIN_AUTO_LOCK_MS);
   }
 }
@@ -3284,7 +3292,7 @@ function resetAutoLock(){
 
 // PIN settings UI helpers
 function changePinFlow(){
-  const stored = localStorage.getItem('jt2_pin');
+  const stored = lsGet('jt2_pin');
   if(!stored){ alert('No PIN set yet. Use the lock screen to set one.'); return; }
   const overlay = document.getElementById('pinOverlay');
   const note = document.getElementById('pinNote');
@@ -3326,8 +3334,8 @@ function syncDefaultCV(){
   const def = cvVersions.find(v=>v.isDefault) || cvVersions[0];
   if(def){
     cvData = def.data; cvName = def.name;
-    localStorage.setItem('jt2_cv', def.data);
-    localStorage.setItem('jt2_cvname', def.name);
+    lsSet('jt2_cv', def.data);
+    lsSet('jt2_cvname', def.name);
   }
 }
 
@@ -3406,7 +3414,7 @@ const GROQ_API = 'https://api.groq.com/openai/v1/chat/completions';
 const GROQ_MODEL = 'llama-3.1-8b-instant'; // Free, fast, accurate
 
 function getGroqKey(){
-  const key = localStorage.getItem('jt2_groq_key')||'';
+  const key = lsGet('jt2_groq_key')||'';
   if(!key) throw new Error('NO_KEY');
   return key;
 }
@@ -3536,7 +3544,7 @@ async function extractHRDetails(){
   let ruleResults = text ? parseLinkedInRuleBased(text) : [];
 
   // Step 2: If no Groq key, show rule-based results and stop
-  const hasGroqKey = !!localStorage.getItem('jt2_groq_key');
+  const hasGroqKey = !!lsGet('jt2_groq_key');
   if(!hasGroqKey){
     if(ruleResults.length){
       showExtractResults(ruleResults, 'rule-based');
