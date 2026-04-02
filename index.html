@@ -513,7 +513,7 @@ body.theme-light .card-gold { background: linear-gradient(135deg,#ffffff 0%,rgba
     </div>
     <div class="table-wrap">
       <table>
-        <thead><tr><th>Name</th><th>Company</th><th>Email</th><th>Phone</th><th>LinkedIn</th><th>Last Contact</th><th>Email Status</th><th>Actions</th></tr></thead>
+        <thead><tr><th style="width:46px;text-align:center">S.No.</th><th>Name</th><th>Company</th><th>Email</th><th>Phone</th><th>LinkedIn</th><th>Last Contact</th><th>Email Status</th><th>Actions</th></tr></thead>
         <tbody id="contactTableBody"></tbody>
       </table>
     </div>
@@ -636,7 +636,7 @@ body.theme-light .card-gold { background: linear-gradient(135deg,#ffffff 0%,rgba
 
   <!-- API KEY STATUS BANNER -->
   <div id="aiKeyBanner" class="alert alert-warn" style="display:none;margin-bottom:4px">
-    ⚠️ Groq API key not set. AI features need a free key from console.groq.com — add it in
+    ⚠️ AI keys not set. Add free Groq key (for text) and/or Gemini key (for images) in
     <a href="#" onclick="nav('settings',document.querySelectorAll('.nav-item')[7])" style="color:var(--gold);font-weight:700">Settings → AI Tools API Key →</a>
   </div>
 
@@ -1061,6 +1061,42 @@ body.theme-light .card-gold { background: linear-gradient(135deg,#ffffff 0%,rgba
       <button class="btn btn-danger btn-sm" onclick="clearGroqKey()">✕ Remove Key</button>
     </div>
     <div id="apiKeyTestResult" style="margin-top:12px;"></div>
+  </div>
+
+
+  <!-- GEMINI API KEY — for image-based HR extraction (Option B) -->
+  <div class="card card-gold">
+    <div class="card-header"><div class="card-title"><span class="card-title-icon">🌟</span>Gemini Vision Key — For Image HR Extraction (Optional)</div></div>
+    <div class="alert alert-info" style="font-size:13px">
+      The <strong>Option B (Upload Screenshot)</strong> in Smart HR Extractor uses Google Gemini Vision to read images. It is <strong>free</strong> (1,500 requests/day). Without this key, the tool uses OCR as a fallback.
+    </div>
+    <div style="background:var(--surface2);border-radius:10px;padding:14px;margin-bottom:14px;border:1px solid var(--border)">
+      <div style="font-weight:600;font-size:13px;color:var(--gold2);margin-bottom:12px">Get free Gemini API key (60 seconds):</div>
+      <div style="display:flex;gap:10px;margin-bottom:10px;font-size:13px;color:var(--text2);align-items:flex-start">
+        <div style="width:24px;height:24px;border-radius:50%;background:var(--gold);color:#0d0f14;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0">1</div>
+        <div>Go to <a href="https://aistudio.google.com/apikey" target="_blank" style="color:var(--gold);font-weight:600">aistudio.google.com/apikey</a> → Sign in with Google</div>
+      </div>
+      <div style="display:flex;gap:10px;margin-bottom:10px;font-size:13px;color:var(--text2);align-items:flex-start">
+        <div style="width:24px;height:24px;border-radius:50%;background:var(--gold);color:#0d0f14;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0">2</div>
+        <div>Click <strong>"Create API Key"</strong> → Copy the key (starts with <code>AIza</code>)</div>
+      </div>
+      <div style="display:flex;gap:10px;font-size:13px;color:var(--text2);align-items:flex-start">
+        <div style="width:24px;height:24px;border-radius:50%;background:var(--gold);color:#0d0f14;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0">3</div>
+        <div>Paste below → <strong>Save Gemini Key</strong> → Option B image extraction now works perfectly</div>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Gemini API Key</label>
+      <div style="display:flex;gap:8px">
+        <input type="password" id="geminiKeyInput" placeholder="AIzaSy..." style="flex:1">
+        <button class="btn btn-secondary btn-sm" onclick="toggleGeminiKeyVis()" id="geminiVisBtn" style="white-space:nowrap;flex-shrink:0">👁 Show</button>
+      </div>
+    </div>
+    <div id="geminiKeyStatus" style="font-size:12px;margin-top:4px;margin-bottom:10px;"></div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <button class="btn btn-primary" onclick="saveGeminiKey()">💾 Save Gemini Key</button>
+      <button class="btn btn-danger btn-sm" onclick="clearGeminiKey()">✕ Remove</button>
+    </div>
   </div>
 
   <!-- DATA MANAGEMENT -->
@@ -1510,6 +1546,7 @@ function init(){
   if(!templates.length) seedTemplates();
   initNewFeatures();
   initApiKeyUI();
+  initGeminiKeyUI();
   if(clientId) document.getElementById('clientIdInput').value=clientId;
   // Auto-connect Firebase if config is saved
   if(fbConfig && fbConfig.apiKey && fbConfig.projectId){
@@ -1815,29 +1852,37 @@ function renderContacts(){
   const q=(document.getElementById('contactSearch')?.value||'').toLowerCase();
   const statusF = document.getElementById('contactEmailFilter')?.value||'';
   let filtered=contacts.filter(ct=>!q||ct.name.toLowerCase().includes(q)||ct.company.toLowerCase().includes(q));
-  if(statusF==='sent')   filtered=filtered.filter(ct=>getContactEmailStatus(ct.email).sent);
-  if(statusF==='unsent') filtered=filtered.filter(ct=>!getContactEmailStatus(ct.email).sent);
+  if(statusF==='sent')   filtered=filtered.filter(ct=>ct.email && getContactEmailStatus(ct.email).sent);
+  if(statusF==='unsent') filtered=filtered.filter(ct=>ct.email && !getContactEmailStatus(ct.email).sent);
+  // Build serial map: absolute position across ALL contacts (not just filtered)
+  // S.No. = position in the full contacts array + 1 (stable, doesn't change with filter)
+  const _contactSerialMap = new Map(contacts.map((ct,i)=>[ct.id, i+1]));
   document.getElementById('contactTableBody').innerHTML=filtered.length?filtered.map(ct=>{
     const es = getContactEmailStatus(ct.email);
-    const emailStatusBadge = es.sent
-      ? `<span style="display:inline-flex;align-items:center;gap:4px;background:rgba(52,211,153,0.12);color:var(--green);border:1px solid rgba(52,211,153,0.3);padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;white-space:nowrap" title="Last emailed: ${fmtDate(es.lastDate)}">✉ Sent (${es.count})</span>`
-      : `<span style="display:inline-flex;align-items:center;gap:4px;background:rgba(248,113,113,0.1);color:var(--red);border:1px solid rgba(248,113,113,0.25);padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700" title="Not yet emailed">✕ Not Sent</span>`;
+    const hasEmail = !!(ct.email && ct.email.trim());
+    // Email Status: show "—" (no email), green sent badge, or red not-sent badge
+    const emailStatusBadge = !hasEmail
+      ? `<span style="display:inline-flex;align-items:center;color:var(--text3);font-size:12px" title="No email address saved">—</span>`
+      : es.sent
+        ? `<span style="display:inline-flex;align-items:center;gap:4px;background:rgba(52,211,153,0.12);color:var(--green);border:1px solid rgba(52,211,153,0.3);padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;white-space:nowrap" title="Last emailed: ${fmtDate(es.lastDate)}">✉ Sent (${es.count})</span>`
+        : `<span style="display:inline-flex;align-items:center;gap:4px;background:rgba(248,113,113,0.1);color:var(--red);border:1px solid rgba(248,113,113,0.25);padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700" title="Not yet emailed">✕ Not Sent</span>`;
     return `<tr>
+      <td style="font-size:12px;color:var(--text3);text-align:center">${_contactSerialMap.get(ct.id)||''}</td>
       <td><div style="font-weight:600">${ct.name}</div><div style="font-size:11px;color:var(--text3)">${ct.desig||''}</div></td>
       <td>${ct.company}</td>
-      <td><a href="mailto:${ct.email}" style="color:var(--gold)">${ct.email}</a></td>
+      <td>${hasEmail?`<a href="mailto:${ct.email}" style="color:var(--gold)">${ct.email}</a>`:'<span style="color:var(--text3)">—</span>'}</td>
       <td>${ct.phone||'—'}</td>
       <td>${ct.linkedin?`<a href="${ct.linkedin}" target="_blank" style="color:var(--blue2)">LinkedIn ↗</a>`:'—'}</td>
       <td style="font-size:12px;color:var(--text3)">${ct.lastContact?fmtDate(ct.lastContact):'—'}</td>
       <td>${emailStatusBadge}</td>
       <td><div style="display:flex;gap:5px;flex-wrap:wrap">
-        <button class="btn btn-blue btn-sm" onclick="quickEmail('${ct.id}')" title="Send Email">📧</button>
+        ${hasEmail?`<button class="btn btn-blue btn-sm" onclick="quickEmail('${ct.id}')" title="Send Email">📧</button>`:''}
         <button class="btn btn-secondary btn-sm" onclick="editContact('${ct.id}')" title="Edit">✏️</button>
         <button class="btn btn-danger btn-sm" onclick="deleteContact('${ct.id}')" title="Delete">🗑</button>
       </div></td>
     </tr>`;
   }).join('')
-    :'<tr><td colspan="8"><div class="empty"><div class="empty-icon">👥</div><div class="empty-title">No contacts yet</div></div></td></tr>';
+    :'<tr><td colspan="9"><div class="empty"><div class="empty-icon">👥</div><div class="empty-title">No contacts yet</div></div></td></tr>';
 }
 
 function openAddContact(){
@@ -2834,6 +2879,8 @@ function renderBulkContactList(){
   const q       = (document.getElementById('bulkSearch')?.value||'').toLowerCase();
   const filter  = document.getElementById('bulkEmailFilter')?.value||'';
   let list = contacts.filter(ct => {
+    // ALWAYS exclude contacts with no email — cannot send email to them
+    if(!ct.email || !ct.email.trim()) return false;
     const matchQ = !q || ct.name.toLowerCase().includes(q) || ct.company.toLowerCase().includes(q) || (ct.email||'').toLowerCase().includes(q);
     if(!matchQ) return false;
     const es = getContactEmailStatus(ct.email);
@@ -2900,7 +2947,11 @@ function bulkSelectNone(){ bulkSelected.clear(); renderBulkContactList(); }
 
 function bulkSelectUnsent(){
   bulkSelected.clear();
-  contacts.forEach(ct=>{ if(!getContactEmailStatus(ct.email).sent) bulkSelected.add(ct.id); });
+  // Only select contacts WITH an email address that haven't been emailed yet
+  contacts.forEach(ct=>{
+    if(ct.email && ct.email.trim() && !getContactEmailStatus(ct.email).sent)
+      bulkSelected.add(ct.id);
+  });
   renderBulkContactList();
 }
 
@@ -3132,6 +3183,39 @@ function initBulkPage(){
   if(warn) warn.style.display = gmailToken ? 'none' : 'flex';
   bulkSelected.clear();
   renderBulkContactList();
+}
+
+
+// ── GEMINI API KEY MANAGEMENT ────────────────────────────────
+function saveGeminiKey(){
+  const key = document.getElementById('geminiKeyInput').value.trim();
+  if(!key){ showMsg('geminiKeyStatus','Enter your Gemini API key','error'); return; }
+  if(!key.startsWith('AIza')){ showMsg('geminiKeyStatus','Invalid key format. Gemini keys start with AIza — get one free at aistudio.google.com/apikey','error'); return; }
+  lsSet('jt2_gemini_key', key);
+  document.getElementById('geminiKeyStatus').innerHTML='<span style="color:var(--green)">✅ Gemini key saved — Option B image extraction enabled!</span>';
+}
+
+function clearGeminiKey(){
+  if(!confirm('Remove Gemini API key?'))return;
+  lsRemove('jt2_gemini_key');
+  document.getElementById('geminiKeyInput').value='';
+  document.getElementById('geminiKeyStatus').innerHTML='<span style="color:var(--red)">❌ Gemini key removed</span>';
+}
+
+function toggleGeminiKeyVis(){
+  const inp = document.getElementById('geminiKeyInput');
+  const btn = document.getElementById('geminiVisBtn');
+  if(inp.type==='password'){ inp.type='text'; btn.textContent='🔒 Hide'; }
+  else { inp.type='password'; btn.textContent='👁 Show'; }
+}
+
+function initGeminiKeyUI(){
+  const saved = lsGet('jt2_gemini_key');
+  const inp = document.getElementById('geminiKeyInput');
+  if(saved && inp){
+    inp.value = saved;
+    document.getElementById('geminiKeyStatus').innerHTML='<span style="color:var(--green)">✅ Gemini Vision key saved</span>';
+  }
 }
 
 // ============================================================
@@ -3533,61 +3617,205 @@ function parseLinkedInRuleBased(text){
   return results;
 }
 
+// ── OCR: Extract text from image using canvas ────────────────
+// Uses Tesseract.js (loaded on demand) for real OCR
+async function extractTextFromImage(base64data, mimeType){
+  return new Promise((resolve) => {
+    // Build data URL
+    const dataUrl = `data:${mimeType};base64,${base64data}`;
+    // Load Tesseract if not already loaded
+    if(window.Tesseract){
+      runTesseract(dataUrl, resolve);
+    } else {
+      const s = document.createElement('script');
+      s.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';
+      s.onload = () => runTesseract(dataUrl, resolve);
+      s.onerror = () => resolve(''); // tesseract failed to load
+      document.head.appendChild(s);
+    }
+  });
+}
+
+async function runTesseract(dataUrl, resolve){
+  try{
+    const worker = await Tesseract.createWorker('eng');
+    const { data: { text } } = await worker.recognize(dataUrl);
+    await worker.terminate();
+    resolve(text || '');
+  } catch(e){
+    console.error('[OCR]', e);
+    resolve('');
+  }
+}
+
+// ── Gemini Vision API (free, handles images natively) ────────
+async function callGeminiVision(base64data, mimeType){
+  const key = lsGet('jt2_gemini_key');
+  if(!key) throw new Error('NO_GEMINI_KEY');
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`;
+  const sys = `You are an HR contact extractor. Extract recruiter/HR contacts from this image.
+Return ONLY valid JSON: {"contacts":[{"name":"","company":"","email":"","phone":"","designation":"","notes":""}]}
+Use "" for missing fields. Never invent data. Extract ALL contacts visible.`;
+  const body = {
+    contents:[{ parts:[
+      { inline_data:{ mime_type: mimeType, data: base64data } },
+      { text: sys }
+    ]}]
+  };
+  const resp = await fetch(url, {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify(body)
+  });
+  if(!resp.ok){
+    const err = await resp.json().catch(()=>({}));
+    if(resp.status===400) throw new Error('Invalid Gemini API key. Check Settings → Gemini Key.');
+    throw new Error('Gemini API error ' + resp.status + ': ' + (err.error?.message||''));
+  }
+  const data = await resp.json();
+  return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+}
+
 async function extractHRDetails(){
   const text = document.getElementById('hrExtractText').value.trim();
   if(!text && !hrImageData){ alert('Please paste text or upload an image first.'); return; }
   const btn = document.getElementById('extractBtn');
   btn.disabled=true; btn.innerHTML='🧠 Extracting...';
-  document.getElementById('extractResult').innerHTML = '<div class="alert alert-info">🔍 Parsing content...</div>';
+  const resEl = document.getElementById('extractResult');
 
-  // Step 1: Always run rule-based parser first (works without any API key)
-  let ruleResults = text ? parseLinkedInRuleBased(text) : [];
+  // ── IMAGE PATH ────────────────────────────────────────────
+  if(hrImageData && !text){
+    resEl.innerHTML = '<div class="alert alert-info">🖼️ Processing image...</div>';
 
-  // Step 2: If no Groq key, show rule-based results and stop
-  const hasGroqKey = !!lsGet('jt2_groq_key');
-  if(!hasGroqKey){
-    if(ruleResults.length){
-      showExtractResults(ruleResults, 'rule-based');
-    } else {
-      document.getElementById('extractResult').innerHTML = `
-        <div class="alert alert-warn">
-          ⚠️ Could not auto-detect HR details from this text.<br>
-          <strong>Tip:</strong> Add a free Groq API key in Settings for AI-powered extraction that works on any post.
-        </div>`;
+    // Try Gemini Vision first (best accuracy for images)
+    const hasGeminiKey = !!lsGet('jt2_gemini_key');
+    if(hasGeminiKey){
+      resEl.innerHTML = '<div class="alert alert-info">🤖 Gemini Vision reading image...</div>';
+      try{
+        const raw = await callGeminiVision(hrImageData, hrImageType);
+        let aiResults = [];
+        try{
+          const json = JSON.parse(raw.replace(/```json
+?|```/g,'').trim());
+          aiResults = (json.contacts||[]).filter(ct=>ct.name||ct.email||ct.company);
+        } catch(e2){ aiResults = []; }
+        if(aiResults.length){
+          showExtractResults(aiResults, 'gemini');
+          btn.disabled=false; btn.innerHTML='🧠 Extract HR Details';
+          return;
+        }
+      } catch(e){
+        console.warn('[Gemini]', e.message);
+        // fall through to OCR
+      }
+    }
+
+    // Fallback: OCR → extract text from image → feed to Groq
+    resEl.innerHTML = '<div class="alert alert-info">🔍 Running OCR on image (this takes 10–20 seconds)...</div>';
+    try{
+      const ocrText = await extractTextFromImage(hrImageData, hrImageType);
+      if(ocrText && ocrText.trim().length > 10){
+        resEl.innerHTML = '<div class="alert alert-info">✅ Text extracted from image — parsing HR details...</div>';
+        // Run rule-based first on OCR text
+        const ruleRes = parseLinkedInRuleBased(ocrText);
+        if(ruleRes.length){
+          showExtractResults(ruleRes, 'ocr');
+          btn.disabled=false; btn.innerHTML='🧠 Extract HR Details';
+          return;
+        }
+        // If rule-based misses, use Groq on OCR text
+        const hasGroqKey = !!lsGet('jt2_groq_key');
+        if(hasGroqKey){
+          resEl.innerHTML = '<div class="alert alert-info">🤖 AI extracting contacts from OCR text...</div>';
+          try{
+            const sys = `You are an HR contact extractor. Extract recruiter contacts.
+Return ONLY valid JSON: {"contacts":[{"name":"","company":"","email":"","phone":"","designation":"","notes":""}]}
+Use "" for missing fields. Never invent data.`;
+            const raw = await callAI(sys, `Extract HR contacts from this text (extracted via OCR from an image):
+
+${ocrText}`);
+            let aiResults = [];
+            try{
+              const json = JSON.parse(raw.replace(/```json
+?|```/g,'').trim());
+              aiResults = (json.contacts||[]).filter(ct=>ct.name||ct.email||ct.company);
+            } catch(e2){ aiResults = []; }
+            if(aiResults.length){
+              showExtractResults(aiResults, 'ocr-ai');
+              btn.disabled=false; btn.innerHTML='🧠 Extract HR Details';
+              return;
+            }
+          } catch(e){ console.warn('[Groq on OCR]', e.message); }
+        }
+        // OCR got text but AI found nothing — show what OCR got
+        resEl.innerHTML = `
+          <div class="alert alert-warn">
+            ⚠️ Image processed but no HR contacts detected automatically.<br>
+            <strong>OCR extracted this text from the image:</strong>
+          </div>
+          <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px;font-size:12px;color:var(--text2);line-height:1.6;max-height:200px;overflow-y:auto;margin-top:8px;white-space:pre-wrap">${ocrText}</div>
+          <div style="margin-top:10px;font-size:12px;color:var(--text3)">
+            💡 Copy the text above → paste it in <strong>Option A</strong> → click Extract again for better results.
+          </div>`;
+      } else {
+        // OCR got nothing useful
+        resEl.innerHTML = `
+          <div class="alert alert-warn">
+            ⚠️ Could not extract text from this image.<br><br>
+            <strong>Options to fix this:</strong><br>
+            1. <strong>Add a Gemini API key</strong> (best for images) — <a href="#" onclick="nav('settings',document.querySelectorAll('.nav-item')[9])" style="color:var(--gold)">Settings → Gemini Key →</a><br>
+            2. Copy the text from the image manually → paste in <strong>Option A</strong>
+          </div>`;
+      }
+    } catch(ocrErr){
+      resEl.innerHTML = `<div class="alert alert-error">❌ Image processing error: ${ocrErr.message}</div>`;
     }
     btn.disabled=false; btn.innerHTML='🧠 Extract HR Details';
     return;
   }
 
-  // Step 3: Use Groq AI for enhanced extraction
-  document.getElementById('extractResult').innerHTML = '<div class="alert alert-info">🤖 AI enhancing extraction...</div>';
+  // ── TEXT PATH (Option A) ──────────────────────────────────
+  resEl.innerHTML = '<div class="alert alert-info">🔍 Parsing content...</div>';
+  let ruleResults = parseLinkedInRuleBased(text);
+  const hasGroqKey = !!lsGet('jt2_groq_key');
+
+  if(!hasGroqKey){
+    if(ruleResults.length){
+      showExtractResults(ruleResults, 'rule-based');
+    } else {
+      resEl.innerHTML = `<div class="alert alert-warn">
+        ⚠️ Could not auto-detect HR details.<br>
+        <strong>Tip:</strong> Add a free Groq API key in Settings for AI-powered extraction.
+      </div>`;
+    }
+    btn.disabled=false; btn.innerHTML='🧠 Extract HR Details';
+    return;
+  }
+
+  resEl.innerHTML = '<div class="alert alert-info">🤖 AI enhancing extraction...</div>';
   try{
     const sys = `You are an HR contact extractor for LinkedIn posts and job descriptions.
 Extract all recruiter/HR contact information. Return ONLY valid JSON, no other text:
 {"contacts":[{"name":"Full Name","company":"Company Name","email":"email@example.com","phone":"+91 XXXXX XXXXX","designation":"Job Title","notes":""}]}
 Rules: extract ALL contacts found. Use "" for missing fields. Never invent data.`;
-    const prompt = `Extract all HR/recruiter contacts from this text:\n\n${text}`;
-    const raw = await callAI(sys, prompt);
+    const raw = await callAI(sys, `Extract all HR/recruiter contacts from this text:
+
+${text}`);
     let aiResults = [];
     try{
-      const json = JSON.parse(raw.replace(/```json\n?|```/g,'').trim());
+      const json = JSON.parse(raw.replace(/```json
+?|```/g,'').trim());
       aiResults = (json.contacts||[]).filter(ct=>ct.name||ct.email||ct.company);
     } catch(e2){ aiResults = []; }
-
-    // Merge: prefer AI results, fall back to rule-based
     const finalResults = aiResults.length ? aiResults : ruleResults;
     if(!finalResults.length){
-      document.getElementById('extractResult').innerHTML='<div class="alert alert-warn">⚠️ No HR contact details found. Paste a more complete post with recruiter name, email, or phone number.</div>';
+      resEl.innerHTML='<div class="alert alert-warn">⚠️ No HR contact details found. Paste a more complete post with recruiter name, email, or phone number.</div>';
     } else {
       showExtractResults(finalResults, aiResults.length ? 'ai' : 'rule-based');
     }
   } catch(e){
-    // AI failed → fall back to rule-based
-    if(ruleResults.length){
-      showExtractResults(ruleResults, 'rule-based');
-    } else {
-      document.getElementById('extractResult').innerHTML=`<div class="alert alert-error">❌ ${e.message}</div>`;
-    }
+    if(ruleResults.length) showExtractResults(ruleResults, 'rule-based');
+    else resEl.innerHTML=`<div class="alert alert-error">❌ ${e.message}</div>`;
   }
   btn.disabled=false; btn.innerHTML='🧠 Extract HR Details';
 }
@@ -3598,9 +3826,14 @@ function showExtractResults(cts, method){
     return;
   }
   window._extractedContacts = cts;
-  const badge = method==='ai'
-    ? '<span style="background:rgba(201,168,76,0.15);color:var(--gold);border:1px solid rgba(201,168,76,0.3);padding:2px 9px;border-radius:6px;font-size:11px;font-weight:600">🤖 AI Enhanced</span>'
-    : '<span style="background:rgba(74,144,217,0.12);color:var(--blue2);border:1px solid rgba(74,144,217,0.25);padding:2px 9px;border-radius:6px;font-size:11px;font-weight:600">⚡ Auto-detected</span>';
+  const badgeMap = {
+    'ai':        '<span style="background:rgba(201,168,76,0.15);color:var(--gold);border:1px solid rgba(201,168,76,0.3);padding:2px 9px;border-radius:6px;font-size:11px;font-weight:600">🤖 AI Enhanced</span>',
+    'rule-based':'<span style="background:rgba(74,144,217,0.12);color:var(--blue2);border:1px solid rgba(74,144,217,0.25);padding:2px 9px;border-radius:6px;font-size:11px;font-weight:600">⚡ Auto-detected</span>',
+    'gemini':    '<span style="background:rgba(52,211,153,0.12);color:var(--green);border:1px solid rgba(52,211,153,0.3);padding:2px 9px;border-radius:6px;font-size:11px;font-weight:600">🌟 Gemini Vision</span>',
+    'ocr':       '<span style="background:rgba(139,92,246,0.12);color:var(--purple);border:1px solid rgba(139,92,246,0.25);padding:2px 9px;border-radius:6px;font-size:11px;font-weight:600">🔍 OCR Extracted</span>',
+    'ocr-ai':    '<span style="background:rgba(201,168,76,0.15);color:var(--gold);border:1px solid rgba(201,168,76,0.3);padding:2px 9px;border-radius:6px;font-size:11px;font-weight:600">🔍🤖 OCR + AI</span>',
+  };
+  const badge = badgeMap[method] || badgeMap['rule-based'];
   document.getElementById('extractResult').innerHTML = `
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
       <span style="font-size:13px;font-weight:600;color:var(--gold2)">✅ Found ${cts.length} contact(s)</span>
