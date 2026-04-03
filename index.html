@@ -3695,8 +3695,7 @@ async function extractHRDetails(){
         const raw = await callGeminiVision(hrImageData, hrImageType);
         let aiResults = [];
         try{
-          const json = JSON.parse(raw.replace(/```json
-?|```/g,'').trim());
+          const json = JSON.parse(raw.replace(/```json\n?|```/g,'').trim());
           aiResults = (json.contacts||[]).filter(ct=>ct.name||ct.email||ct.company);
         } catch(e2){ aiResults = []; }
         if(aiResults.length){
@@ -3736,8 +3735,7 @@ Use "" for missing fields. Never invent data.`;
 ${ocrText}`);
             let aiResults = [];
             try{
-              const json = JSON.parse(raw.replace(/```json
-?|```/g,'').trim());
+              const json = JSON.parse(raw.replace(/```json\n?|```/g,'').trim());
               aiResults = (json.contacts||[]).filter(ct=>ct.name||ct.email||ct.company);
             } catch(e2){ aiResults = []; }
             if(aiResults.length){
@@ -3803,8 +3801,7 @@ Rules: extract ALL contacts found. Use "" for missing fields. Never invent data.
 ${text}`);
     let aiResults = [];
     try{
-      const json = JSON.parse(raw.replace(/```json
-?|```/g,'').trim());
+      const json = JSON.parse(raw.replace(/```json\n?|```/g,'').trim());
       aiResults = (json.contacts||[]).filter(ct=>ct.name||ct.email||ct.company);
     } catch(e2){ aiResults = []; }
     const finalResults = aiResults.length ? aiResults : ruleResults;
