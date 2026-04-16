@@ -1173,6 +1173,7 @@ body.theme-light .card-gold { background: linear-gradient(135deg,#ffffff 0%,rgba
     <div class="modal-title" id="contactModalTitle">Add HR Contact</div>
     <button class="close-btn" onclick="closeModal('mContact')">✕</button>
   </div>
+  <div id="cDupWarn"></div>
   <div class="form-row">
     <div class="form-group"><label>Full Name *</label><input type="text" id="cName" placeholder="HR Manager Name"></div>
     <div class="form-group"><label>Company *</label><input type="text" id="cCompany" placeholder="Company Name"></div>
@@ -1912,14 +1913,54 @@ async function saveContact(){
   const co=document.getElementById('cCompany').value.trim();
   if(!name||!co){alert('Name and Company required');return;}
   const id=document.getElementById('cEditId').value;
-  const data={id:id||uid(),name,company:co,email:document.getElementById('cEmail').value.trim(),
-    phone:document.getElementById('cPhone').value.trim(),linkedin:document.getElementById('cLinkedin').value.trim(),
-    desig:document.getElementById('cDesig').value.trim(),notes:document.getElementById('cNotes').value.trim(),
+  const email=document.getElementById('cEmail').value.trim();
+
+  // Duplicate check — only for NEW contacts (not edits)
+  if(!id){
+    const dup = findContactDuplicate(name, co, email, null);
+    if(dup){
+      const proceed = confirm(
+        `⚠️ Duplicate contact detected!
+
+` +
+        `An existing contact matches:
+` +
+        `Name: ${dup.name}
+Company: ${dup.company}` +
+        (dup.email ? `
+Email: ${dup.email}` : '') +
+        `
+
+Save anyway as a new entry?`
+      );
+      if(!proceed) return;
+    }
+  }
+
+  const data={id:id||uid(),name,company:co,email,
+    phone:document.getElementById('cPhone').value.trim(),
+    linkedin:document.getElementById('cLinkedin').value.trim(),
+    desig:document.getElementById('cDesig').value.trim(),
+    notes:document.getElementById('cNotes').value.trim(),
     lastContact:document.getElementById('cLastContact').value};
+
   // Update local array immediately
   if(id){const i=contacts.findIndex(x=>x.id===id);if(i>-1)contacts[i]=data;else contacts.unshift(data);}
   else contacts.unshift(data);
   LS.set('jt2_contacts',contacts);
+
+  // Mark the extractor save button as "Saved" (if this save came from extractor)
+  const extractorBtn = window._extractorSaveBtnEl;
+  if(extractorBtn && extractorBtn.tagName==='BUTTON'){
+    extractorBtn.textContent='✅ Saved!'; extractorBtn.disabled=true;
+    extractorBtn.className='btn btn-success btn-sm';
+    window._extractorSaveBtnEl = null;
+  }
+
+  // Clear duplicate warning
+  const warnEl = document.getElementById('cDupWarn');
+  if(warnEl) warnEl.innerHTML='';
+
   // Close modal and render IMMEDIATELY from local data (don't wait for cloud)
   closeModal('mContact');
   renderContacts();
@@ -3617,6 +3658,27 @@ function parseLinkedInRuleBased(text){
   return results;
 }
 
+// ── CONTACT DUPLICATE DETECTION ─────────────────────────────
+// Returns the first matching existing contact, or null if none found.
+// Priority: email match (exact) → name+company match (case-insensitive)
+function findContactDuplicate(name, company, email, excludeId){
+  const emailL   = (email||'').toLowerCase().trim();
+  const nameL    = (name||'').toLowerCase().trim();
+  const companyL = (company||'').toLowerCase().trim();
+  for(const ct of contacts){
+    if(excludeId && ct.id === excludeId) continue; // skip self when editing
+    // Email match is definitive (if both have email)
+    if(emailL && ct.email && ct.email.toLowerCase().trim() === emailL) return ct;
+    // Name + Company match (no email in either) — softer check
+    if(nameL && companyL && nameL !== 'unknown' && companyL !== 'unknown'){
+      if(ct.name.toLowerCase().trim()  === nameL &&
+         ct.company.toLowerCase().trim() === companyL) return ct;
+    }
+  }
+  return null;
+}
+
+
 // ── OCR: Extract text from image using canvas ────────────────
 // Uses Tesseract.js (loaded on demand) for real OCR
 async function extractTextFromImage(base64data, mimeType){
@@ -3853,20 +3915,46 @@ function showExtractResults(cts, method){
 function saveExtractedContact(i, btnEl){
   const ct = (window._extractedContacts||[])[i];
   if(!ct){ alert('Contact data missing. Please re-extract.'); return; }
-  if(!ct.name && !ct.company && !ct.email){ alert('Need at least a name, company, or email to save.'); return; }
-  const data = {
-    id:uid(), name:ct.name||'Unknown', company:ct.company||'Unknown',
-    email:ct.email||'', phone:ct.phone||'', desig:ct.designation||'',
-    notes:ct.notes||'Extracted from LinkedIn post', linkedin:'', lastContact:''
-  };
-  contacts.unshift(data);
-  LS.set('jt2_contacts', contacts);
-  saveToCloud('contacts', data.id, data);
-  renderContacts(); populateDropdowns();
-  if(btnEl && btnEl.tagName==='BUTTON'){
-    btnEl.textContent='✅ Saved!'; btnEl.disabled=true;
-    btnEl.className='btn btn-success btn-sm';
+  if(!ct.name && !ct.company && !ct.email){
+    alert('Need at least a name, company, or email to save.'); return;
   }
+
+  // Check for existing duplicate before opening modal
+  const dupInfo = findContactDuplicate(ct.name||'', ct.company||'', ct.email||'', null);
+  const isDup   = !!dupInfo;
+
+  // Pre-fill the existing Add HR Contact modal with extracted data
+  document.getElementById('cEditId').value    = ''; // blank = new contact
+  document.getElementById('contactModalTitle').textContent = 
+    isDup ? '⚠️ Possible duplicate — verify & save' : 'Verify & Save HR Contact';
+  document.getElementById('cName').value      = ct.name||'';
+  document.getElementById('cCompany').value   = ct.company||'';
+  document.getElementById('cEmail').value     = ct.email||'';
+  document.getElementById('cPhone').value     = ct.phone||'';
+  document.getElementById('cLinkedin').value  = '';
+  document.getElementById('cDesig').value     = ct.designation||'';
+  document.getElementById('cNotes').value     = ct.notes||'Extracted from LinkedIn post';
+  document.getElementById('cLastContact').value = '';
+
+  // Show duplicate warning inside modal if needed
+  const warnEl = document.getElementById('cDupWarn');
+  if(warnEl){
+    if(isDup){
+      warnEl.innerHTML = `<div class="alert alert-warn" style="font-size:12px;margin-bottom:10px">
+        ⚠️ A similar contact already exists: <strong>${dupInfo.name}</strong> 
+        (${dupInfo.company}${dupInfo.email?' · '+dupInfo.email:''}).
+        You can still save if this is a different person, or close to cancel.
+      </div>`;
+    } else {
+      warnEl.innerHTML = '';
+    }
+  }
+
+  // Tag which extractor button to mark as saved after modal saves
+  window._extractorSaveBtnEl = btnEl;
+  window._extractorSaveBtnIdx = i;
+
+  openModal('mContact');
 }
 
 
