@@ -273,6 +273,35 @@ body.theme-light .motiv-card { background: linear-gradient(135deg,#fff 0%,rgba(2
 body.theme-light .card-gold { background: linear-gradient(135deg,#ffffff 0%,rgba(201,168,76,0.04) 100%); }
 .theme-btn { background: var(--surface2); border: 1px solid var(--border2); color: var(--text2); padding: 6px 13px; border-radius: 20px; cursor: pointer; font-size: 12px; font-weight: 600; transition: all .2s; font-family: inherit; display: flex; align-items: center; gap: 6px; }
 .theme-btn:hover { border-color: var(--gold); color: var(--gold); }
+
+/* PLANNING TAB */
+.plan-item{background:var(--surface2);border:1px solid var(--border);border-radius:10px;margin-bottom:8px;overflow:hidden;transition:border-color .15s}
+.plan-item:hover{border-color:var(--border2)}
+.plan-item.done-item{opacity:0.6}
+.plan-item-head{display:flex;align-items:flex-start;gap:10px;padding:12px 14px;cursor:pointer}
+.plan-check{width:20px;height:20px;border-radius:5px;border:2px solid var(--border2);flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center;transition:all .2s;cursor:pointer}
+.plan-check.done{background:var(--gold);border-color:var(--gold);color:#0d0f14;font-size:11px}
+.plan-item-text{flex:1;font-size:13px;color:var(--text);font-weight:500;line-height:1.5}
+.plan-item-text.done{text-decoration:line-through;color:var(--text3)}
+.plan-type-badge{font-size:10px;padding:2px 8px;border-radius:6px;font-weight:600;flex-shrink:0;white-space:nowrap}
+.plan-type-topic{background:rgba(167,139,250,0.12);color:#a78bfa;border:1px solid rgba(167,139,250,0.2)}
+.plan-type-skill{background:rgba(45,212,191,0.1);color:#2dd4bf;border:1px solid rgba(45,212,191,0.2)}
+.plan-type-task{background:rgba(201,168,76,0.1);color:#e8cc7a;border:1px solid rgba(201,168,76,0.2)}
+.plan-priority-high{font-size:10px;padding:2px 7px;border-radius:6px;background:rgba(248,113,113,0.1);color:#f87171;border:1px solid rgba(248,113,113,0.2);font-weight:600;flex-shrink:0}
+.plan-item-actions{display:flex;gap:5px;flex-shrink:0}
+.plan-notes-area{border-top:1px solid var(--border);padding:12px 14px;background:var(--surface3);display:none}
+.plan-notes-area.open{display:block}
+.plan-notes-content{font-size:13px;color:var(--text2);line-height:1.7;white-space:pre-wrap}
+.plan-notes-empty{font-size:12px;color:var(--text3);font-style:italic}
+.plan-notes-edit-btn{font-size:11px;color:var(--gold);cursor:pointer;margin-top:8px;display:inline-block}
+.plan-sidebar-item{display:flex;align-items:center;gap:9px;padding:9px 16px;cursor:pointer;border-left:3px solid transparent;transition:all .15s;font-size:13px;color:var(--text2)}
+.plan-sidebar-item:hover{background:rgba(255,255,255,0.03);color:var(--text)}
+.plan-sidebar-item.active{background:rgba(201,168,76,0.06);color:var(--gold2);border-left-color:var(--gold)}
+.plan-sidebar-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.plan-sidebar-count{font-size:11px;margin-left:auto;color:var(--text3)}
+.plan-section-label{font-size:10px;color:var(--text3);letter-spacing:1.2px;font-weight:700;text-transform:uppercase;padding:10px 14px 4px;margin-top:4px;border-top:1px solid var(--border)}
+.plan-section-label:first-child{border-top:none;margin-top:0}
+.pf-active{background:var(--gold) !important;color:#0d0f14 !important;border-color:var(--gold) !important}
 </style>
 </head>
 <body>
@@ -335,6 +364,7 @@ body.theme-light .card-gold { background: linear-gradient(135deg,#ffffff 0%,rgba
   <div class="nav-item" onclick="nav('templates',this)">📝 Templates</div>
   <div class="nav-item" onclick="nav('resume',this)">📎 My CV</div>
   <div class="nav-item" onclick="nav('tools',this)">🤖 AI Tools</div>
+  <div class="nav-item" onclick="nav('planning',this)">📋 Planning</div>
   <div class="nav-item" onclick="nav('motivation',this)">🌟 Motivation</div>
   <div class="nav-item" onclick="nav('settings',this)">⚙️ Settings</div>
 </div>
@@ -732,6 +762,149 @@ body.theme-light .card-gold { background: linear-gradient(135deg,#ffffff 0%,rgba
     <div id="prepResult"></div>
   </div>
 
+</div>
+
+
+<!-- PLANNING -->
+<div class="page" id="page-planning">
+  <div style="display:grid;grid-template-columns:210px 1fr;gap:0;min-height:520px;background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden">
+
+    <!-- SIDEBAR -->
+    <div id="planningSidebar" style="background:var(--surface2);border-right:1px solid var(--border);display:flex;flex-direction:column">
+      <div style="padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+        <div style="font-size:12px;font-weight:700;color:var(--text2);letter-spacing:1.2px;text-transform:uppercase">Checklists</div>
+        <button class="btn btn-primary btn-sm" onclick="openAddChecklist()" style="font-size:11px;padding:3px 10px">＋ New</button>
+      </div>
+      <div id="checklistSidebarItems" style="flex:1;overflow-y:auto;padding:8px 0"></div>
+    </div>
+
+    <!-- MAIN AREA -->
+    <div id="planningMain" style="display:flex;flex-direction:column">
+
+      <!-- Empty state when no checklist selected -->
+      <div id="planningEmpty" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--text3);gap:12px;padding:40px">
+        <div style="font-size:48px">📋</div>
+        <div style="font-size:16px;font-weight:600;color:var(--text2)">No checklist selected</div>
+        <div style="font-size:13px;text-align:center;max-width:240px;line-height:1.6">Select a checklist from the left, or create a new one to start tracking your interview preparation.</div>
+        <button class="btn btn-primary" onclick="openAddChecklist()">＋ Create your first checklist</button>
+      </div>
+
+      <!-- Checklist detail view (hidden until checklist selected) -->
+      <div id="planningDetail" style="display:none;flex-direction:column;height:100%">
+
+        <!-- Detail header -->
+        <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px">
+          <div id="planningDetailDot" style="width:10px;height:10px;border-radius:50%;flex-shrink:0"></div>
+          <div style="flex:1">
+            <div id="planningDetailName" style="font-size:16px;font-weight:700;color:var(--text)"></div>
+            <div id="planningDetailMeta" style="font-size:12px;color:var(--text3);margin-top:2px"></div>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-secondary btn-sm" onclick="editChecklist()" title="Edit checklist">✏️</button>
+            <button class="btn btn-danger btn-sm" onclick="deleteChecklist()" title="Delete checklist">🗑</button>
+          </div>
+        </div>
+
+        <!-- Progress bar -->
+        <div style="padding:12px 20px;border-bottom:1px solid var(--border);background:var(--surface2)">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+            <div style="font-size:11px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:1px">Progress</div>
+            <div id="planningProgLabel" style="font-size:12px;font-weight:700;color:var(--gold)"></div>
+          </div>
+          <div style="height:6px;background:var(--surface3);border-radius:3px;overflow:hidden">
+            <div id="planningProgBar" style="height:100%;border-radius:3px;background:var(--gold);transition:width 0.4s ease;width:0%"></div>
+          </div>
+          <div id="planningProgStats" style="display:flex;gap:16px;margin-top:8px;font-size:11px;color:var(--text3)"></div>
+        </div>
+
+        <!-- Filter + Add bar -->
+        <div style="padding:10px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <button onclick="planFilterSet('all')"   id="pf-all"   class="btn btn-secondary btn-sm" style="font-size:11px">All</button>
+          <button onclick="planFilterSet('todo')"  id="pf-todo"  class="btn btn-secondary btn-sm" style="font-size:11px">Pending</button>
+          <button onclick="planFilterSet('done')"  id="pf-done"  class="btn btn-secondary btn-sm" style="font-size:11px">Done</button>
+          <button onclick="planFilterSet('topic')" id="pf-topic" class="btn btn-secondary btn-sm" style="font-size:11px">Topic</button>
+          <button onclick="planFilterSet('skill')" id="pf-skill" class="btn btn-secondary btn-sm" style="font-size:11px">Skill</button>
+          <button onclick="planFilterSet('task')"  id="pf-task"  class="btn btn-secondary btn-sm" style="font-size:11px">Task</button>
+          <div style="flex:1"></div>
+          <button class="btn btn-primary btn-sm" onclick="openAddPlanItem()" style="font-size:12px">＋ Add item</button>
+        </div>
+
+        <!-- Items list -->
+        <div id="planningItems" style="flex:1;overflow-y:auto;padding:10px 20px"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PLANNING: Add/Edit Checklist Modal -->
+<div class="modal-overlay" id="mChecklist">
+<div class="modal" style="max-width:420px">
+  <div class="modal-header">
+    <div class="modal-title" id="checklistModalTitle">New Checklist</div>
+    <button class="close-btn" onclick="closeModal('mChecklist')">✕</button>
+  </div>
+  <div class="form-group"><label>Checklist Name *</label><input type="text" id="clName" placeholder="e.g. Magna International Interview Prep"></div>
+  <div class="form-group"><label>Colour label</label>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:4px" id="clColorPicker">
+      <div class="cl-color-opt" data-color="#c9a84c" style="width:28px;height:28px;border-radius:50%;background:#c9a84c;cursor:pointer;border:2px solid transparent" onclick="selectClColor('#c9a84c')"></div>
+      <div class="cl-color-opt" data-color="#a78bfa" style="width:28px;height:28px;border-radius:50%;background:#a78bfa;cursor:pointer;border:2px solid transparent" onclick="selectClColor('#a78bfa')"></div>
+      <div class="cl-color-opt" data-color="#2dd4bf" style="width:28px;height:28px;border-radius:50%;background:#2dd4bf;cursor:pointer;border:2px solid transparent" onclick="selectClColor('#2dd4bf')"></div>
+      <div class="cl-color-opt" data-color="#34d399" style="width:28px;height:28px;border-radius:50%;background:#34d399;cursor:pointer;border:2px solid transparent" onclick="selectClColor('#34d399')"></div>
+      <div class="cl-color-opt" data-color="#6aaee8" style="width:28px;height:28px;border-radius:50%;background:#6aaee8;cursor:pointer;border:2px solid transparent" onclick="selectClColor('#6aaee8')"></div>
+      <div class="cl-color-opt" data-color="#f87171" style="width:28px;height:28px;border-radius:50%;background:#f87171;cursor:pointer;border:2px solid transparent" onclick="selectClColor('#f87171')"></div>
+      <div class="cl-color-opt" data-color="#fb923c" style="width:28px;height:28px;border-radius:50%;background:#fb923c;cursor:pointer;border:2px solid transparent" onclick="selectClColor('#fb923c')"></div>
+    </div>
+    <input type="hidden" id="clColor" value="#c9a84c">
+  </div>
+  <input type="hidden" id="clEditId">
+  <div style="display:flex;gap:10px;margin-top:4px">
+    <button class="btn btn-primary" onclick="saveChecklist()">💾 Save</button>
+    <button class="btn btn-secondary" onclick="closeModal('mChecklist')">Cancel</button>
+  </div>
+</div>
+</div>
+
+<!-- PLANNING: Add/Edit Item Modal -->
+<div class="modal-overlay" id="mPlanItem">
+<div class="modal" style="max-width:560px">
+  <div class="modal-header">
+    <div class="modal-title" id="planItemModalTitle">Add Item</div>
+    <button class="close-btn" onclick="closeModal('mPlanItem')">✕</button>
+  </div>
+  <div class="form-row">
+    <div class="form-group" style="flex:2"><label>Item / Question / Topic *</label><input type="text" id="piText" placeholder="e.g. Introduce yourself"></div>
+    <div class="form-group"><label>Type</label>
+      <select id="piType">
+        <option value="task">Task</option>
+        <option value="topic">Topic</option>
+        <option value="skill">Skill</option>
+      </select>
+    </div>
+  </div>
+  <div class="form-row">
+    <div class="form-group"><label>Priority</label>
+      <select id="piPriority">
+        <option value="normal">Normal</option>
+        <option value="high">High</option>
+      </select>
+    </div>
+    <div class="form-group" style="flex:2"><label>Section / Category (optional)</label>
+      <input type="text" id="piSection" placeholder="e.g. HR Questions, Technical, Tools">
+    </div>
+  </div>
+  <div class="form-group">
+    <label>Answer / Notes / Topic Details
+      <span style="font-size:11px;color:var(--text3);font-weight:400;text-transform:none;letter-spacing:0;margin-left:6px">Your prepared answer, key points, or study notes</span>
+    </label>
+    <textarea id="piNotes" rows="7" placeholder="Write your prepared answer or study notes here...&#10;&#10;Example:&#10;Hi, I'm Akash Shah with 8+ years in automotive embedded systems, specialising in ADAS and diagnostics. I have worked at Bosch, Veoneer and OLA Electric across the full V-model lifecycle..."></textarea>
+  </div>
+  <input type="hidden" id="piEditId">
+  <input type="hidden" id="piChecklistId">
+  <div style="display:flex;gap:10px;margin-top:4px">
+    <button class="btn btn-primary" onclick="savePlanItem()">💾 Save item</button>
+    <button class="btn btn-secondary" onclick="closeModal('mPlanItem')">Cancel</button>
+  </div>
+</div>
 </div>
 
 
@@ -1390,6 +1563,7 @@ function attachListeners(){
     sent:    (d)=>{ sentLog=d;  LS.set('jt2_sent',d);     renderSentLog();  },
     goals:   (d)=>{ goals=d;    LS.set('jt2_goals',d);    renderGoals();    renderDashboard();   },
     journal: (d)=>{ journal=d;  LS.set('jt2_journal',d);  renderJournal();  },
+    planning:(d)=>{ planningData=d; LS.set('jt2_planning',d); renderPlanning(); pingPill(); },
   };
   Object.entries(map).forEach(([col, handler]) => {
     const unsub = FB.db.collection(col).onSnapshot(
@@ -1574,6 +1748,7 @@ function init(){
 function renderAll(){
   renderDashboard();renderJobs();renderContacts();renderTemplates();
   renderGoals();renderJournal();renderVisionBoard();renderSentLog();
+  renderPlanning();
 }
 
 // ============================================================
@@ -1588,6 +1763,7 @@ function nav(id,el){
   if(id==='dashboard')renderDashboard();
   if(id==='tools')updateAIKeyBanner();
   if(id==='bulk')initBulkPage();
+  if(id==='planning')renderPlanning();
 }
 
 // ============================================================
@@ -3259,6 +3435,352 @@ function initGeminiKeyUI(){
   }
 }
 
+
+// ============================================================
+// PLANNING TAB ENGINE
+// ============================================================
+
+// Data: array of checklist objects, each with items array
+let planningData = LS.get('jt2_planning', []);
+let activePlanChecklistId = null;
+let planFilter = 'all';
+
+// ── SAVE / LOAD ──────────────────────────────────────────────
+function savePlanningLocal(){
+  LS.set('jt2_planning', planningData);
+}
+
+async function savePlanningCloud(cl){
+  if(!FB.ok) return;
+  // Store each checklist as a separate Firestore doc
+  const clean = JSON.parse(JSON.stringify(cl));
+  await fbOp(FB.db.collection('planning').doc(String(cl.id)).set(clean));
+}
+
+async function deletePlanningCloud(id){
+  if(!FB.ok) return;
+  await fbOp(FB.db.collection('planning').doc(String(id)).delete());
+}
+
+// ── COLOUR PICKER ────────────────────────────────────────────
+let selectedClColor = '#c9a84c';
+function selectClColor(hex){
+  selectedClColor = hex;
+  document.getElementById('clColor').value = hex;
+  document.querySelectorAll('.cl-color-opt').forEach(el=>{
+    el.style.border = el.dataset.color === hex ? '3px solid var(--text)' : '2px solid transparent';
+    el.style.transform = el.dataset.color === hex ? 'scale(1.2)' : 'scale(1)';
+  });
+}
+
+// ── CHECKLIST CRUD ───────────────────────────────────────────
+function openAddChecklist(){
+  document.getElementById('clEditId').value = '';
+  document.getElementById('clName').value   = '';
+  document.getElementById('checklistModalTitle').textContent = 'New Checklist';
+  selectedClColor = '#c9a84c';
+  selectClColor('#c9a84c');
+  openModal('mChecklist');
+}
+
+function editChecklist(){
+  const cl = planningData.find(x=>x.id===activePlanChecklistId);
+  if(!cl) return;
+  document.getElementById('clEditId').value = cl.id;
+  document.getElementById('clName').value   = cl.name;
+  document.getElementById('checklistModalTitle').textContent = 'Edit Checklist';
+  selectedClColor = cl.color||'#c9a84c';
+  selectClColor(cl.color||'#c9a84c');
+  openModal('mChecklist');
+}
+
+async function saveChecklist(){
+  const name = document.getElementById('clName').value.trim();
+  if(!name){ alert('Checklist name is required'); return; }
+  const id   = document.getElementById('clEditId').value;
+  const color = document.getElementById('clColor').value || selectedClColor || '#c9a84c';
+
+  if(id){
+    const cl = planningData.find(x=>x.id===id);
+    if(cl){ cl.name=name; cl.color=color; }
+  } else {
+    planningData.unshift({id:uid(), name, color, created:new Date().toISOString(), items:[]});
+    activePlanChecklistId = planningData[0].id;
+  }
+  savePlanningLocal();
+  const cl = planningData.find(x=>x.id===(id||activePlanChecklistId));
+  if(cl) await savePlanningCloud(cl);
+  closeModal('mChecklist');
+  renderPlanningSidebar();
+  renderPlanningDetail();
+}
+
+async function deleteChecklist(){
+  if(!activePlanChecklistId) return;
+  const cl = planningData.find(x=>x.id===activePlanChecklistId);
+  if(!cl) return;
+  if(!confirm(`Delete checklist "${cl.name}" and all ${cl.items.length} item(s)?`)) return;
+  await deletePlanningCloud(activePlanChecklistId);
+  planningData = planningData.filter(x=>x.id!==activePlanChecklistId);
+  activePlanChecklistId = planningData.length ? planningData[0].id : null;
+  savePlanningLocal();
+  renderPlanningSidebar();
+  renderPlanningDetail();
+}
+
+// ── ITEM CRUD ─────────────────────────────────────────────────
+function openAddPlanItem(){
+  document.getElementById('piEditId').value     = '';
+  document.getElementById('piText').value       = '';
+  document.getElementById('piType').value       = 'task';
+  document.getElementById('piPriority').value   = 'normal';
+  document.getElementById('piSection').value    = '';
+  document.getElementById('piNotes').value      = '';
+  document.getElementById('piChecklistId').value = activePlanChecklistId||'';
+  document.getElementById('planItemModalTitle').textContent = 'Add Item';
+  openModal('mPlanItem');
+}
+
+function editPlanItem(clId, itemId){
+  const cl   = planningData.find(x=>x.id===clId);
+  const item = cl?.items.find(x=>x.id===itemId);
+  if(!cl||!item) return;
+  document.getElementById('piEditId').value     = itemId;
+  document.getElementById('piText').value       = item.text;
+  document.getElementById('piType').value       = item.type||'task';
+  document.getElementById('piPriority').value   = item.priority||'normal';
+  document.getElementById('piSection').value    = item.section||'';
+  document.getElementById('piNotes').value      = item.notes||'';
+  document.getElementById('piChecklistId').value = clId;
+  document.getElementById('planItemModalTitle').textContent = 'Edit Item';
+  openModal('mPlanItem');
+}
+
+async function savePlanItem(){
+  const text    = document.getElementById('piText').value.trim();
+  if(!text){ alert('Item text is required'); return; }
+  const clId    = document.getElementById('piChecklistId').value || activePlanChecklistId;
+  const editId  = document.getElementById('piEditId').value;
+  const cl      = planningData.find(x=>x.id===clId);
+  if(!cl){ alert('Checklist not found'); return; }
+
+  const itemData = {
+    id:       editId || uid(),
+    text,
+    type:     document.getElementById('piType').value,
+    priority: document.getElementById('piPriority').value,
+    section:  document.getElementById('piSection').value.trim(),
+    notes:    document.getElementById('piNotes').value.trim(),
+    done:     editId ? (cl.items.find(x=>x.id===editId)?.done||false) : false,
+    created:  editId ? (cl.items.find(x=>x.id===editId)?.created||new Date().toISOString()) : new Date().toISOString()
+  };
+
+  if(editId){
+    const idx = cl.items.findIndex(x=>x.id===editId);
+    if(idx>-1) cl.items[idx] = itemData; else cl.items.push(itemData);
+  } else {
+    cl.items.push(itemData);
+  }
+
+  savePlanningLocal();
+  await savePlanningCloud(cl);
+  closeModal('mPlanItem');
+  renderPlanningDetail();
+}
+
+async function togglePlanItem(clId, itemId){
+  const cl   = planningData.find(x=>x.id===clId);
+  const item = cl?.items.find(x=>x.id===itemId);
+  if(!cl||!item) return;
+  item.done = !item.done;
+  savePlanningLocal();
+  await savePlanningCloud(cl);
+  renderPlanningDetail();
+}
+
+async function deletePlanItem(clId, itemId){
+  const cl = planningData.find(x=>x.id===clId);
+  if(!cl) return;
+  if(!confirm('Delete this item?')) return;
+  cl.items = cl.items.filter(x=>x.id!==itemId);
+  savePlanningLocal();
+  await savePlanningCloud(cl);
+  renderPlanningDetail();
+}
+
+// ── NOTES EXPAND/COLLAPSE inline ─────────────────────────────
+function togglePlanNotes(itemId){
+  const el = document.getElementById('pnotes-'+itemId);
+  if(!el) return;
+  el.classList.toggle('open');
+}
+
+// ── FILTER ───────────────────────────────────────────────────
+function planFilterSet(f){
+  planFilter = f;
+  // Update button styles
+  ['all','todo','done','topic','skill','task'].forEach(k=>{
+    const btn = document.getElementById('pf-'+k);
+    if(btn) btn.classList.toggle('pf-active', k===f);
+  });
+  renderPlanningDetail();
+}
+
+// ── RENDER SIDEBAR ───────────────────────────────────────────
+function renderPlanningSidebar(){
+  const el = document.getElementById('checklistSidebarItems');
+  if(!el) return;
+  if(!planningData.length){
+    el.innerHTML = '<div style="padding:20px 16px;font-size:12px;color:var(--text3);line-height:1.6">No checklists yet.<br>Click "+ New" to create your first checklist.</div>';
+    return;
+  }
+  el.innerHTML = planningData.map(cl=>{
+    const done  = cl.items.filter(i=>i.done).length;
+    const total = cl.items.length;
+    const pct   = total ? Math.round(done/total*100) : 0;
+    return `<div class="plan-sidebar-item ${cl.id===activePlanChecklistId?'active':''}"
+      onclick="selectPlanChecklist('${cl.id}')">
+      <div class="plan-sidebar-dot" style="background:${cl.color||'#c9a84c'}"></div>
+      <div style="flex:1;overflow:hidden">
+        <div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${cl.name}</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:2px">${done}/${total} · ${pct}%</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function selectPlanChecklist(id){
+  activePlanChecklistId = id;
+  renderPlanningSidebar();
+  renderPlanningDetail();
+}
+
+// ── RENDER DETAIL ─────────────────────────────────────────────
+function renderPlanningDetail(){
+  const emptyEl  = document.getElementById('planningEmpty');
+  const detailEl = document.getElementById('planningDetail');
+  if(!activePlanChecklistId || !planningData.find(x=>x.id===activePlanChecklistId)){
+    if(emptyEl)  emptyEl.style.display  = 'flex';
+    if(detailEl) detailEl.style.display = 'none';
+    return;
+  }
+  if(emptyEl)  emptyEl.style.display  = 'none';
+  if(detailEl) detailEl.style.display = 'flex';
+
+  const cl    = planningData.find(x=>x.id===activePlanChecklistId);
+  const done  = cl.items.filter(i=>i.done).length;
+  const total = cl.items.length;
+  const pct   = total ? Math.round(done/total*100) : 0;
+
+  // Header
+  const dotEl = document.getElementById('planningDetailDot');
+  if(dotEl) dotEl.style.background = cl.color||'#c9a84c';
+  const nameEl = document.getElementById('planningDetailName');
+  if(nameEl) nameEl.textContent = cl.name;
+  const metaEl = document.getElementById('planningDetailMeta');
+  if(metaEl) metaEl.textContent = `Created ${fmtDate(cl.created)} · ${total} item${total!==1?'s':''}`;
+
+  // Progress
+  const progBar   = document.getElementById('planningProgBar');
+  const progLabel = document.getElementById('planningProgLabel');
+  const progStats = document.getElementById('planningProgStats');
+  if(progBar)   progBar.style.width   = pct+'%';
+  if(progLabel) progLabel.textContent = pct+'% complete';
+  if(progStats) progStats.innerHTML   =
+    `<span style="color:var(--green)">✓ ${done} done</span>
+     <span>· ${total-done} pending</span>
+     <span>· ${total} total</span>`;
+
+  // Filter items
+  let items = [...cl.items];
+  if(planFilter==='todo')  items = items.filter(i=>!i.done);
+  if(planFilter==='done')  items = items.filter(i=>i.done);
+  if(['topic','skill','task'].includes(planFilter)) items = items.filter(i=>i.type===planFilter);
+
+  // Group by section
+  const sections = {};
+  items.forEach(item=>{
+    const sec = item.section || '(No section)';
+    if(!sections[sec]) sections[sec] = [];
+    sections[sec].push(item);
+  });
+
+  const itemsEl = document.getElementById('planningItems');
+  if(!itemsEl) return;
+
+  if(!items.length){
+    itemsEl.innerHTML = `<div style="padding:30px;text-align:center;color:var(--text3)">
+      <div style="font-size:28px;margin-bottom:8px">🎯</div>
+      <div style="font-size:14px;font-weight:600;color:var(--text2);margin-bottom:6px">
+        ${planFilter==='done' ? 'Nothing completed yet' : 'No items match this filter'}
+      </div>
+      <div style="font-size:12px">
+        ${planFilter==='all' ? 'Click "+ Add item" to get started.' : 'Try a different filter.'}
+      </div></div>`;
+    return;
+  }
+
+  const typeBadge = {
+    topic: '<span class="plan-type-badge plan-type-topic">Topic</span>',
+    skill: '<span class="plan-type-badge plan-type-skill">Skill</span>',
+    task:  '<span class="plan-type-badge plan-type-task">Task</span>',
+  };
+
+  itemsEl.innerHTML = Object.entries(sections).map(([secName, secItems])=>{
+    const secHtml = secItems.map(item=>{
+      const hasNotes   = !!(item.notes && item.notes.trim());
+      const notesLabel = hasNotes ? `📝 ${item.notes.length > 80 ? item.notes.slice(0,80)+'…' : 'View answer/notes'}` : '+ Add answer / notes';
+      return `
+        <div class="plan-item ${item.done?'done-item':''}" id="pitem-${item.id}">
+          <div class="plan-item-head" onclick="togglePlanNotes('${item.id}')">
+            <div class="plan-check ${item.done?'done':''}"
+              onclick="event.stopPropagation();togglePlanItem('${cl.id}','${item.id}')"
+              title="${item.done?'Mark pending':'Mark done'}">${item.done?'✓':''}</div>
+            <div style="flex:1;min-width:0">
+              <div class="plan-item-text ${item.done?'done':''}">${item.text}</div>
+              <div style="display:flex;gap:6px;margin-top:4px;flex-wrap:wrap;align-items:center">
+                ${typeBadge[item.type]||typeBadge.task}
+                ${item.priority==='high'?'<span class="plan-priority-high">High</span>':''}
+                <span style="font-size:11px;color:var(--text3)">${hasNotes?'📝 has notes':'no notes yet'}</span>
+              </div>
+            </div>
+            <div class="plan-item-actions" onclick="event.stopPropagation()">
+              <button class="btn btn-secondary btn-sm" style="font-size:11px" onclick="editPlanItem('${cl.id}','${item.id}')" title="Edit">✏️</button>
+              <button class="btn btn-danger btn-sm" style="font-size:11px" onclick="deletePlanItem('${cl.id}','${item.id}')" title="Delete">🗑</button>
+            </div>
+          </div>
+          <div class="plan-notes-area" id="pnotes-${item.id}">
+            ${hasNotes
+              ? `<div class="plan-notes-content">${item.notes.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>
+                 <div class="plan-notes-edit-btn" onclick="editPlanItem('${cl.id}','${item.id}')">✏️ Edit answer/notes</div>`
+              : `<div class="plan-notes-empty">No answer or notes added yet.</div>
+                 <div class="plan-notes-edit-btn" onclick="editPlanItem('${cl.id}','${item.id}')">+ Add answer / notes →</div>`
+            }
+          </div>
+        </div>`;
+    }).join('');
+
+    const sectionLabel = secName !== '(No section)' || Object.keys(sections).length > 1
+      ? `<div class="plan-section-label">${secName}</div>`
+      : '';
+    return sectionLabel + secHtml;
+  }).join('');
+}
+
+// ── MAIN RENDER (called on nav) ───────────────────────────────
+function renderPlanning(){
+  // Auto-select first checklist if none selected
+  if(!activePlanChecklistId && planningData.length){
+    activePlanChecklistId = planningData[0].id;
+  }
+  renderPlanningSidebar();
+  renderPlanningDetail();
+  planFilterSet('all');
+}
+
+// ── FIREBASE LISTENER (adds planning to real-time sync) ───────
+// Called from attachListeners() extension below
+
 // ============================================================
 // THEME SYSTEM
 // ============================================================
@@ -4074,6 +4596,7 @@ function initNewFeatures(){
   }
   renderCVVersions();
   updateLastSyncUI();
+  renderPlanning();
 }
 
 window.addEventListener('load',init);
