@@ -60,9 +60,9 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 .nav::-webkit-scrollbar{height:2px;}
 .nav::-webkit-scrollbar-track{background:transparent;}
 .nav::-webkit-scrollbar-thumb{background:var(--gold);border-radius:2px;}
-.nav-item{padding:14px 16px;cursor:pointer;font-size:13px;font-weight:500;color:var(--text3);border-bottom:2px solid transparent;transition:all .2s;white-space:nowrap;display:flex;align-items:center;gap:6px;letter-spacing:0.3px;}
-.nav-item:hover{color:var(--text);}
-.nav-item.active{color:var(--gold2);border-color:var(--gold);}
+.nav-item{padding:0 14px;height:44px;display:flex;align-items:center;font-size:12px;font-weight:500;color:var(--text3);cursor:pointer;border-bottom:2.5px solid transparent;white-space:nowrap;transition:all .18s;letter-spacing:0.1px;}
+.nav-item:hover{color:var(--text);background:rgba(255,255,255,0.02);}
+.nav-item.active{color:var(--gold2);border-bottom-color:var(--gold);background:rgba(201,168,76,0.03);}
 .nav-badge{background:var(--gold);color:#0d0f14;font-size:10px;font-weight:700;padding:1px 6px;border-radius:8px;min-width:18px;text-align:center;}
 
 /* MAIN */
@@ -72,9 +72,9 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 @keyframes fadeIn{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
 
 /* CARDS */
-.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:22px;margin-bottom:18px;transition:border-color .2s;}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:22px;margin-bottom:18px;transition:border-color .2s;}
 .card:hover{border-color:var(--border2);}
-.card-gold{border-color:rgba(201,168,76,0.2);background:linear-gradient(135deg,var(--surface) 0%,rgba(201,168,76,0.03) 100%);}
+.card-gold{border-color:rgba(201,168,76,0.25);}
 .card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;}
 .card-title{font-family:'Playfair Display',serif;font-size:16px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:8px;}
 .card-title-icon{font-size:18px;}
@@ -275,14 +275,14 @@ body.theme-light .card-gold { background: linear-gradient(135deg,#ffffff 0%,rgba
 .theme-btn:hover { border-color: var(--gold); color: var(--gold); }
 
 /* PLANNING TAB */
-.plan-item{background:var(--surface2);border:1px solid var(--border);border-radius:10px;margin-bottom:8px;overflow:hidden;transition:border-color .15s}
+.plan-item{background:var(--surface2);border:1px solid var(--border);border-radius:12px;margin-bottom:8px;overflow:hidden;transition:all .15s}
 .plan-item:hover{border-color:var(--border2)}
-.plan-item.done-item{opacity:0.6}
+.plan-item.done-item{opacity:0.85}
 .plan-item-head{display:flex;align-items:flex-start;gap:10px;padding:12px 14px;cursor:pointer}
 .plan-check{width:20px;height:20px;border-radius:5px;border:2px solid var(--border2);flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center;transition:all .2s;cursor:pointer}
 .plan-check.done{background:var(--gold);border-color:var(--gold);color:#0d0f14;font-size:11px}
 .plan-item-text{flex:1;font-size:13px;color:var(--text);font-weight:500;line-height:1.5}
-.plan-item-text.done{text-decoration:line-through;color:var(--text3)}
+.plan-item-text.done{color:var(--text2)}
 .plan-type-badge{font-size:10px;padding:2px 8px;border-radius:6px;font-weight:600;flex-shrink:0;white-space:nowrap}
 .plan-type-topic{background:rgba(167,139,250,0.12);color:#a78bfa;border:1px solid rgba(167,139,250,0.2)}
 .plan-type-skill{background:rgba(45,212,191,0.1);color:#2dd4bf;border:1px solid rgba(45,212,191,0.2)}
@@ -302,6 +302,37 @@ body.theme-light .card-gold { background: linear-gradient(135deg,#ffffff 0%,rgba
 .plan-section-label{font-size:10px;color:var(--text3);letter-spacing:1.2px;font-weight:700;text-transform:uppercase;padding:10px 14px 4px;margin-top:4px;border-top:1px solid var(--border)}
 .plan-section-label:first-child{border-top:none;margin-top:0}
 .pf-active{background:var(--gold) !important;color:#0d0f14 !important;border-color:var(--gold) !important}
+
+/* CONTENT BLOCKS */
+.content-type-btn{padding:6px 14px;border-radius:8px;border:1px solid var(--border2);font-size:12px;cursor:pointer;color:var(--text2);background:var(--surface2);transition:all .15s}
+.content-type-btn:hover{border-color:var(--gold);color:var(--gold)}
+.content-type-btn.on{background:rgba(201,168,76,0.12);border-color:var(--gold);color:var(--gold2)}
+.content-block{background:var(--surface2);border:1px solid var(--border);border-radius:10px;margin-bottom:12px;overflow:hidden}
+.content-block-head{display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid var(--border);background:var(--surface3)}
+.content-block-type{font-size:11px;padding:2px 8px;border-radius:5px;font-weight:600}
+.content-block-caption{font-size:12px;color:var(--text2);flex:1}
+.content-block-body{padding:14px}
+.content-block-text{font-size:13px;color:var(--text);line-height:1.8;white-space:pre-wrap}
+.content-block-img{max-width:100%;border-radius:6px;display:block}
+.content-block-link{color:var(--gold);font-size:13px;word-break:break-all}
+.plan-view-btn{font-size:11px;padding:3px 10px;border-radius:6px;background:rgba(201,168,76,0.1);border:1px solid rgba(201,168,76,0.25);color:var(--gold2);cursor:pointer;white-space:nowrap;transition:all .15s}
+.plan-view-btn:hover{background:rgba(201,168,76,0.2)}
+
+/* UI REVAMP — Enhanced visual polish */
+.card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;gap:12px;}
+.card-title{font-size:15px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:8px;letter-spacing:-0.1px;}
+.card-title-icon{font-size:18px;}
+.form-group label{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;display:block;}
+.form-group input,.form-group select,.form-group textarea{border-radius:10px;font-size:13px;}
+.table-wrap table thead th{font-size:10px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--text3);padding:10px 12px;}
+.status{padding:3px 10px;border-radius:6px;font-size:11px;font-weight:700;letter-spacing:0.3px;}
+.modal{border-radius:18px;}
+.modal-header{margin-bottom:18px;padding-bottom:14px;border-bottom:1px solid var(--border);}
+.modal-title{font-size:17px;font-weight:700;letter-spacing:-0.2px;}
+.plan-item-head{padding:14px 16px;}
+.plan-item-text{font-size:13px;font-weight:600;line-height:1.5;}
+.plan-view-btn{border-radius:7px;font-weight:600;}
+.plan-section-label{font-size:10px;font-weight:800;letter-spacing:1.5px;}
 </style>
 </head>
 <body>
@@ -3608,6 +3639,21 @@ async function deletePlanItem(clId, itemId){
   renderPlanningDetail();
 }
 
+// ── PLANNING ITEM REORDER ────────────────────────────────────
+async function movePlanItem(clId, itemId, dir){
+  const cl = planningData.find(x=>x.id===clId);
+  if(!cl) return;
+  const i = cl.items.findIndex(x=>x.id===itemId);
+  if(i < 0) return;
+  const newI = i + dir;
+  if(newI < 0 || newI >= cl.items.length) return;
+  const tmp = cl.items[i]; cl.items[i] = cl.items[newI]; cl.items[newI] = tmp;
+  savePlanningLocal();
+  await savePlanningCloud(cl);
+  renderPlanningDetail();
+}
+
+
 // ── NOTES EXPAND/COLLAPSE inline ─────────────────────────────
 function togglePlanNotes(itemId){
   const el = document.getElementById('pnotes-'+itemId);
@@ -3732,7 +3778,7 @@ function renderPlanningDetail(){
       const notesLabel = hasNotes ? `📝 ${item.notes.length > 80 ? item.notes.slice(0,80)+'…' : 'View answer/notes'}` : '+ Add answer / notes';
       return `
         <div class="plan-item ${item.done?'done-item':''}" id="pitem-${item.id}">
-          <div class="plan-item-head" onclick="togglePlanNotes('${item.id}')">
+          <div class="plan-item-head"('${item.id}')">
             <div class="plan-check ${item.done?'done':''}"
               onclick="event.stopPropagation();togglePlanItem('${cl.id}','${item.id}')"
               title="${item.done?'Mark pending':'Mark done'}">${item.done?'✓':''}</div>
@@ -3741,22 +3787,18 @@ function renderPlanningDetail(){
               <div style="display:flex;gap:6px;margin-top:4px;flex-wrap:wrap;align-items:center">
                 ${typeBadge[item.type]||typeBadge.task}
                 ${item.priority==='high'?'<span class="plan-priority-high">High</span>':''}
-                <span style="font-size:11px;color:var(--text3)">${hasNotes?'📝 has notes':'no notes yet'}</span>
+                <span style="font-size:11px;color:var(--text3)">${(item.content&&item.content.length||hasNotes)?'📝 '+((item.content&&item.content.length)||0)+' block(s)':'no notes yet'}</span>
               </div>
             </div>
             <div class="plan-item-actions" onclick="event.stopPropagation()">
+              <button class="plan-view-btn" onclick="openViewAnswer('${cl.id}','${item.id}')" title="View answer / notes">📖 View Answer</button>
               <button class="btn btn-secondary btn-sm" style="font-size:11px" onclick="editPlanItem('${cl.id}','${item.id}')" title="Edit">✏️</button>
+              <button class="btn btn-secondary btn-sm" style="font-size:11px;padding:3px 6px" onclick="movePlanItem('${cl.id}','${item.id}',-1)" title="Move up" ${items.indexOf(item)===0?'disabled':''}>▲</button>
+              <button class="btn btn-secondary btn-sm" style="font-size:11px;padding:3px 6px" onclick="movePlanItem('${cl.id}','${item.id}',1)" title="Move down" ${items.indexOf(item)===items.length-1?'disabled':''}>▼</button>
               <button class="btn btn-danger btn-sm" style="font-size:11px" onclick="deletePlanItem('${cl.id}','${item.id}')" title="Delete">🗑</button>
             </div>
           </div>
-          <div class="plan-notes-area" id="pnotes-${item.id}">
-            ${hasNotes
-              ? `<div class="plan-notes-content">${item.notes.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>
-                 <div class="plan-notes-edit-btn" onclick="editPlanItem('${cl.id}','${item.id}')">✏️ Edit answer/notes</div>`
-              : `<div class="plan-notes-empty">No answer or notes added yet.</div>
-                 <div class="plan-notes-edit-btn" onclick="editPlanItem('${cl.id}','${item.id}')">+ Add answer / notes →</div>`
-            }
-          </div>
+
         </div>`;
     }).join('');
 
@@ -3780,6 +3822,230 @@ function renderPlanning(){
 
 // ── FIREBASE LISTENER (adds planning to real-time sync) ───────
 // Called from attachListeners() extension below
+
+
+// ============================================================
+// PLANNING — MULTI-FORMAT CONTENT BLOCKS
+// ============================================================
+
+let _activeContentType = 'text';
+let _contentImageData  = null;  // base64
+let _contentPdfData    = null;  // base64
+
+// Track which item we're viewing answers for
+let _vaChecklistId = null;
+let _vaItemId      = null;
+
+function selectContentType(t){
+  _activeContentType = t;
+  document.querySelectorAll('.content-type-btn').forEach(el=>{
+    el.classList.toggle('on', el.dataset.type === t);
+  });
+  ['text','image','link','pdf'].forEach(k=>{
+    const el = document.getElementById('ct'+k.charAt(0).toUpperCase()+k.slice(1));
+    if(el) el.style.display = k===t ? 'block' : 'none';
+  });
+}
+
+function handleContentImage(event){
+  const file = event.target.files[0]; if(!file) return;
+  if(file.size > 200*1024){ alert('Image too large. Please keep under 200KB for Firestore sync.'); return; }
+  const reader = new FileReader();
+  reader.onload = e => {
+    _contentImageData = e.target.result; // full data URL
+    document.getElementById('ctImageLabel').textContent = '✅ ' + file.name;
+  };
+  reader.readAsDataURL(file);
+  event.target.value = '';
+}
+
+function handleContentPdf(event){
+  const file = event.target.files[0]; if(!file) return;
+  if(file.size > 500*1024){ alert('PDF too large. Please keep under 500KB for Firestore sync.'); return; }
+  const reader = new FileReader();
+  reader.onload = e => {
+    _contentPdfData = e.target.result; // full data URL
+    document.getElementById('ctPdfLabel').textContent = '✅ ' + file.name + ' (' + Math.round(file.size/1024) + 'KB)';
+  };
+  reader.readAsDataURL(file);
+  event.target.value = '';
+}
+
+function openAddContentBlock(clId, itemId, blockId){
+  _contentImageData = null;
+  _contentPdfData   = null;
+  document.getElementById('ctBlockChecklistId').value = clId;
+  document.getElementById('ctBlockItemId').value      = itemId;
+  document.getElementById('ctBlockId').value          = blockId||'';
+  document.getElementById('ctCaption').value          = '';
+  document.getElementById('ctTextVal').value          = '';
+  document.getElementById('ctLinkVal').value          = '';
+  document.getElementById('ctImageLabel').textContent = 'Click to upload image (max 200KB)';
+  document.getElementById('ctPdfLabel').textContent   = 'Click to upload PDF (max 500KB)';
+  document.getElementById('addContentTitle').textContent = blockId ? 'Edit Content Block' : 'Add Content';
+  selectContentType('text');
+
+  // If editing, pre-fill
+  if(blockId){
+    const cl   = planningData.find(x=>x.id===clId);
+    const item = cl?.items.find(x=>x.id===itemId);
+    const blk  = item?.content?.find(x=>x.id===blockId);
+    if(blk){
+      selectContentType(blk.type);
+      document.getElementById('ctCaption').value = blk.caption||'';
+      if(blk.type==='text')  document.getElementById('ctTextVal').value = blk.value||'';
+      if(blk.type==='link')  document.getElementById('ctLinkVal').value = blk.value||'';
+      if(blk.type==='image') document.getElementById('ctImageLabel').textContent = '✅ Image loaded — upload new to replace';
+      if(blk.type==='pdf')   document.getElementById('ctPdfLabel').textContent   = '✅ PDF loaded — upload new to replace';
+    }
+  }
+  closeModal('mViewAnswer');
+  openModal('mAddContent');
+}
+
+async function saveContentBlock(){
+  const clId   = document.getElementById('ctBlockChecklistId').value;
+  const itemId = document.getElementById('ctBlockItemId').value;
+  const blockId= document.getElementById('ctBlockId').value;
+  const caption= document.getElementById('ctCaption').value.trim();
+  const type   = _activeContentType;
+
+  let value = '';
+  if(type==='text')  value = document.getElementById('ctTextVal').value.trim();
+  if(type==='link')  value = document.getElementById('ctLinkVal').value.trim();
+  if(type==='image') value = _contentImageData || '';
+  if(type==='pdf')   value = _contentPdfData || '';
+
+  // If editing image/pdf and no new file uploaded, keep old value
+  if((type==='image'||type==='pdf') && !value && blockId){
+    const cl   = planningData.find(x=>x.id===clId);
+    const item = cl?.items.find(x=>x.id===itemId);
+    const blk  = item?.content?.find(x=>x.id===blockId);
+    if(blk) value = blk.value;
+  }
+
+  if(!value){ alert('Please add content before saving.'); return; }
+
+  const cl   = planningData.find(x=>x.id===clId);
+  const item = cl?.items.find(x=>x.id===itemId);
+  if(!cl||!item){ alert('Item not found'); return; }
+
+  if(!item.content) item.content = [];
+
+  const block = { id: blockId||uid(), type, value, caption };
+  if(blockId){
+    const idx = item.content.findIndex(x=>x.id===blockId);
+    if(idx>-1) item.content[idx]=block; else item.content.push(block);
+  } else {
+    item.content.push(block);
+  }
+
+  savePlanningLocal();
+  await savePlanningCloud(cl);
+  closeModal('mAddContent');
+  // Re-open view modal to show updated content
+  openViewAnswer(clId, itemId);
+}
+
+async function deleteContentBlock(clId, itemId, blockId){
+  if(!confirm('Delete this content block?')) return;
+  const cl   = planningData.find(x=>x.id===clId);
+  const item = cl?.items.find(x=>x.id===itemId);
+  if(!cl||!item) return;
+  item.content = (item.content||[]).filter(x=>x.id!==blockId);
+  savePlanningLocal();
+  await savePlanningCloud(cl);
+  openViewAnswer(clId, itemId); // refresh modal
+}
+
+function openViewAnswer(clId, itemId){
+  const cl   = planningData.find(x=>x.id===clId);
+  const item = cl?.items.find(x=>x.id===itemId);
+  if(!cl||!item){ alert('Item not found'); return; }
+
+  _vaChecklistId = clId;
+  _vaItemId      = itemId;
+
+  document.getElementById('vaItemTitle').textContent = item.text;
+  const typeLabel = item.type ? item.type.charAt(0).toUpperCase()+item.type.slice(1) : 'Item';
+  document.getElementById('vaItemMeta').innerHTML =
+    `<span style="color:var(--text3)">${typeLabel}</span>` +
+    (item.priority==='high' ? ' · <span style="color:var(--red)">High priority</span>' : '') +
+    (item.section ? ` · <span>${item.section}</span>` : '') +
+    ` · ${cl.name}`;
+
+  // Edit button stores IDs
+  document.getElementById('vaEditBtn').onclick = ()=>{ closeModal('mViewAnswer'); editPlanItem(clId, itemId); };
+
+  const contentEl = document.getElementById('vaContent');
+
+  // Migrate legacy notes → content block (backward compat)
+  const allBlocks = [...(item.content||[])];
+  if(item.notes && item.notes.trim() && !allBlocks.find(b=>b.type==='text'&&b.value===item.notes)){
+    allBlocks.unshift({id:'legacy-notes', type:'text', value:item.notes, caption:'Notes'});
+  }
+
+  if(!allBlocks.length){
+    contentEl.innerHTML = `
+      <div style="padding:30px;text-align:center;color:var(--text3)">
+        <div style="font-size:32px;margin-bottom:10px">📝</div>
+        <div style="font-size:14px;font-weight:600;color:var(--text2);margin-bottom:8px">No answer or notes yet</div>
+        <div style="font-size:12px;margin-bottom:16px">Add text answers, images, links or PDFs to build your study notes.</div>
+        <button class="btn btn-primary" onclick="openAddContentBlock('${clId}','${itemId}','')">+ Add first content block</button>
+      </div>`;
+  } else {
+    const typeIcons = {text:'📝', image:'🖼', link:'🔗', pdf:'📄'};
+    const typeColors = {text:'rgba(201,168,76,0.15)', image:'rgba(45,212,191,0.1)', link:'rgba(167,139,250,0.1)', pdf:'rgba(248,113,113,0.1)'};
+    const typeTextColors = {text:'var(--gold2)', image:'var(--teal)', link:'var(--purple)', pdf:'var(--red)'};
+
+    contentEl.innerHTML = `
+      <div style="padding:14px 0 0">
+        ${allBlocks.map((blk,i)=>`
+          <div class="content-block" style="margin:0 0 12px">
+            <div class="content-block-head">
+              <span class="content-block-type" style="background:${typeColors[blk.type]||'var(--surface3)'};color:${typeTextColors[blk.type]||'var(--text2)'}">${typeIcons[blk.type]||'📝'} ${blk.type}</span>
+              <span class="content-block-caption">${blk.caption||''}</span>
+              ${blk.id!=='legacy-notes' ? `
+                <button class="btn btn-secondary btn-sm" style="font-size:11px" onclick="openAddContentBlock('${clId}','${itemId}','${blk.id}')">✏️</button>
+                <button class="btn btn-danger btn-sm" style="font-size:11px" onclick="deleteContentBlock('${clId}','${itemId}','${blk.id}')">🗑</button>
+              ` : `<button class="btn btn-secondary btn-sm" style="font-size:11px" onclick="migrateNotesToBlock('${clId}','${itemId}')">Convert →</button>`}
+            </div>
+            <div class="content-block-body">
+              ${blk.type==='text' ? `<div class="content-block-text">${blk.value.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>` : ''}
+              ${blk.type==='image' ? `<img class="content-block-img" src="${blk.value}" alt="${blk.caption||'image'}">` : ''}
+              ${blk.type==='link' ? `<a href="${blk.value}" target="_blank" class="content-block-link">${blk.value}</a>` : ''}
+              ${blk.type==='pdf' ? `
+                <iframe src="${blk.value}" style="width:100%;height:300px;border:none;border-radius:6px"></iframe>
+                <a href="${blk.value}" download="answer.pdf" class="btn btn-secondary btn-sm" style="display:inline-block;margin-top:8px;font-size:11px">⬇ Download PDF</a>
+              ` : ''}
+            </div>
+          </div>`).join('')}
+        <div style="padding-bottom:16px">
+          <button class="btn btn-primary btn-sm" onclick="openAddContentBlock('${clId}','${itemId}','')">+ Add content block</button>
+        </div>
+      </div>`;
+  }
+  openModal('mViewAnswer');
+}
+
+async function migrateNotesToBlock(clId, itemId){
+  const cl   = planningData.find(x=>x.id===clId);
+  const item = cl?.items.find(x=>x.id===itemId);
+  if(!cl||!item||!item.notes) return;
+  if(!item.content) item.content=[];
+  item.content.unshift({id:uid(),type:'text',value:item.notes,caption:'Notes'});
+  item.notes=''; // clear legacy
+  savePlanningLocal();
+  await savePlanningCloud(cl);
+  openViewAnswer(clId, itemId);
+}
+
+function editFromView(){
+  if(_vaChecklistId && _vaItemId){
+    closeModal('mViewAnswer');
+    editPlanItem(_vaChecklistId, _vaItemId);
+  }
+}
 
 // ============================================================
 // THEME SYSTEM
@@ -4601,5 +4867,83 @@ function initNewFeatures(){
 
 window.addEventListener('load',init);
 </script>
+
+<!-- PLANNING: View Answer Modal -->
+<div class="modal-overlay" id="mViewAnswer">
+<div class="modal" style="max-width:700px;max-height:85vh;display:flex;flex-direction:column">
+  <div class="modal-header" style="flex-shrink:0">
+    <div>
+      <div class="modal-title" id="vaItemTitle">View Answer</div>
+      <div id="vaItemMeta" style="font-size:12px;color:var(--text3);margin-top:2px"></div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <button class="btn btn-primary btn-sm" id="vaEditBtn" onclick="editFromView()">✏️ Edit</button>
+      <button class="close-btn" onclick="closeModal('mViewAnswer')">✕</button>
+    </div>
+  </div>
+  <div id="vaContent" style="flex:1;overflow-y:auto;padding:0 4px"></div>
+</div>
+</div>
+
+<!-- PLANNING: Add Content Block Modal -->
+<div class="modal-overlay" id="mAddContent">
+<div class="modal" style="max-width:520px">
+  <div class="modal-header">
+    <div class="modal-title" id="addContentTitle">Add Content</div>
+    <button class="close-btn" onclick="closeModal('mAddContent')">✕</button>
+  </div>
+  <div class="form-group">
+    <label>Content type</label>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px" id="contentTypePicker">
+      <div class="content-type-btn on" data-type="text" onclick="selectContentType('text')">📝 Text</div>
+      <div class="content-type-btn" data-type="image" onclick="selectContentType('image')">🖼 Image</div>
+      <div class="content-type-btn" data-type="link" onclick="selectContentType('link')">🔗 Link</div>
+      <div class="content-type-btn" data-type="pdf" onclick="selectContentType('pdf')">📄 PDF</div>
+    </div>
+  </div>
+  <div id="contentInputArea">
+    <div id="ctText" style="display:block">
+      <div class="form-group"><label>Text / Answer</label>
+        <textarea id="ctTextVal" rows="8" placeholder="Write your answer, notes, or key points here..."></textarea>
+      </div>
+    </div>
+    <div id="ctImage" style="display:none">
+      <div class="form-group"><label>Upload image</label>
+        <div class="upload-zone" onclick="document.getElementById('ctImageFile').click()" style="height:100px;display:flex;align-items:center;justify-content:center">
+          <span id="ctImageLabel">Click to upload image (max 200KB)</span>
+        </div>
+        <input type="file" id="ctImageFile" accept="image/*" style="display:none" onchange="handleContentImage(event)">
+        <div class="alert alert-warn" style="font-size:12px;margin-top:8px">⚠️ Images are stored in Firestore as base64. Keep under 200KB to avoid sync issues.</div>
+      </div>
+    </div>
+    <div id="ctLink" style="display:none">
+      <div class="form-group"><label>URL / Link</label>
+        <input type="url" id="ctLinkVal" placeholder="https://...">
+      </div>
+    </div>
+    <div id="ctPdf" style="display:none">
+      <div class="form-group"><label>Upload PDF</label>
+        <div class="upload-zone" onclick="document.getElementById('ctPdfFile').click()" style="height:100px;display:flex;align-items:center;justify-content:center">
+          <span id="ctPdfLabel">Click to upload PDF (max 500KB)</span>
+        </div>
+        <input type="file" id="ctPdfFile" accept=".pdf" style="display:none" onchange="handleContentPdf(event)">
+        <div class="alert alert-warn" style="font-size:12px;margin-top:8px">⚠️ PDFs are stored as base64. Keep under 500KB.</div>
+      </div>
+    </div>
+  </div>
+  <div class="form-group">
+    <label>Caption / label (optional)</label>
+    <input type="text" id="ctCaption" placeholder="e.g. My answer, Reference diagram, Study notes...">
+  </div>
+  <input type="hidden" id="ctBlockId">
+  <input type="hidden" id="ctBlockChecklistId">
+  <input type="hidden" id="ctBlockItemId">
+  <div style="display:flex;gap:10px;margin-top:4px">
+    <button class="btn btn-primary" onclick="saveContentBlock()">💾 Save</button>
+    <button class="btn btn-secondary" onclick="closeModal('mAddContent')">Cancel</button>
+  </div>
+</div>
+</div>
+
 </body>
 </html>
