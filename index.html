@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>JobTrackPro — Akash Career Suite</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500;1,600&family=DM+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 /* ═══════════════════════════════════════════════════════
@@ -796,6 +798,91 @@ body.theme-light .card-gold { background: linear-gradient(135deg,#ffffff 0%,rgba
   .pin-grid{grid-template-columns:repeat(3,60px);gap:6px;}
   .pin-btn{width:60px;height:60px;font-size:18px;}
 }
+
+/* ── JD–CV MATCH STEP INDICATOR ── */
+@keyframes pulse{0%,100%{transform:scale(1);opacity:1;}50%{transform:scale(1.08);opacity:.85;}}
+.cvm-step{display:flex;flex-direction:column;align-items:center;gap:5px;flex-shrink:0;}
+.cvm-step-num{
+  width:36px;height:36px;border-radius:50%;
+  background:var(--surface3);border:2px solid var(--border2);
+  color:var(--text3);font-size:14px;font-weight:700;
+  display:flex;align-items:center;justify-content:center;
+  transition:all .3s;
+}
+.cvm-step.active .cvm-step-num{
+  background:linear-gradient(135deg,var(--gold),var(--gold2));
+  border-color:var(--gold);color:#080b12;
+  box-shadow:0 4px 16px rgba(200,169,110,0.4);
+}
+.cvm-step.done .cvm-step-num{background:var(--green);border-color:var(--green);color:#fff;}
+.cvm-step-label{font-size:10px;color:var(--text3);font-weight:600;letter-spacing:0.5px;text-transform:uppercase;}
+.cvm-step.active .cvm-step-label{color:var(--gold2);}
+.cvm-step.done .cvm-step-label{color:var(--green2);}
+.cvm-step-line{flex:1;height:2px;background:var(--border2);min-width:28px;margin:0 6px;margin-bottom:16px;transition:background .4s;}
+.cvm-step-line.done{background:linear-gradient(90deg,var(--gold),var(--gold2));}
+
+/* ── SKILL CHIPS (match / missing / weak) ── */
+.cvm-chip{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:4px 11px;border-radius:20px;font-size:11px;font-weight:600;
+  letter-spacing:0.2px;white-space:nowrap;
+}
+.cvm-chip-match{background:rgba(34,197,94,0.12);color:var(--green2);border:1px solid rgba(34,197,94,0.25);}
+.cvm-chip-miss{background:rgba(239,68,68,0.12);color:var(--red2);border:1px solid rgba(239,68,68,0.25);}
+.cvm-chip-weak{background:rgba(249,115,22,0.12);color:var(--orange2);border:1px solid rgba(249,115,22,0.25);}
+.cvm-chip-ats{background:rgba(139,92,246,0.1);color:var(--purple2);border:1px solid rgba(139,92,246,0.2);}
+
+/* ── DIMENSION SCORE BAR ── */
+.cvm-dim{padding:8px 0;}
+.cvm-dim-head{display:flex;justify-content:space-between;margin-bottom:6px;}
+.cvm-dim-name{font-size:12px;font-weight:600;color:var(--text2);}
+.cvm-dim-val{font-size:12px;font-weight:700;color:var(--gold2);}
+.cvm-dim-bar{background:var(--surface4);border-radius:6px;height:6px;overflow:hidden;}
+.cvm-dim-fill{height:100%;border-radius:6px;background:linear-gradient(90deg,var(--gold),var(--gold2));transition:width 1.2s cubic-bezier(0.34,1.1,0.64,1);}
+
+/* ── MINI STAT ── */
+.cvm-mini-stat{background:var(--surface3);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center;}
+.cvm-mini-num{font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:700;}
+.cvm-mini-label{font-size:10px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-top:4px;}
+
+/* ── RECOMMENDATION ROW ── */
+.cvm-rec{display:flex;gap:14px;align-items:flex-start;padding:12px 0;border-bottom:1px solid var(--border);}
+.cvm-rec:last-child{border-bottom:none;}
+.cvm-rec-priority{width:28px;height:28px;border-radius:50%;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.cvm-rec-p1{background:rgba(239,68,68,0.15);color:var(--red2);}
+.cvm-rec-p2{background:rgba(249,115,22,0.15);color:var(--orange2);}
+.cvm-rec-p3{background:rgba(200,169,110,0.15);color:var(--gold2);}
+.cvm-rec-body{flex:1;}
+.cvm-rec-title{font-weight:600;font-size:13px;margin-bottom:3px;}
+.cvm-rec-detail{font-size:12px;color:var(--text2);line-height:1.7;}
+
+/* ── MOBILE: CVM panels ── */
+@media(max-width:640px){
+  #cvmPanel1 > div[style*="grid-template-columns:1fr 1fr"]{grid-template-columns:1fr!important;display:flex!important;flex-direction:column!important;}
+  #cvmPanel3 > div[style*="grid-template-columns:auto"]{grid-template-columns:1fr!important;}
+  #cvmDimScores{grid-template-columns:1fr!important;}
+  #cvmPanel3 > div[style*="grid-template-columns:1fr 1fr"]{grid-template-columns:1fr!important;}
+  #cvmMiniStats{grid-template-columns:repeat(3,1fr)!important;}
+}
+
+/* ── UNSENT PANEL & CV MATCH MODAL ── */
+.ecvm-input-tab{transition:all .2s;}
+.ecvm-input-tab.active{background:linear-gradient(135deg,var(--gold),var(--gold2))!important;color:#080b12!important;border-color:var(--gold)!important;}
+#cvMatchModal .card{margin-bottom:0;}
+#cvMatchModal .card-gold{border-color:rgba(200,169,110,0.22);}
+.unsent-contact-row{
+  display:flex;align-items:center;gap:10px;padding:9px 12px;
+  background:var(--surface3);border:1px solid var(--border);border-radius:9px;
+  cursor:pointer;transition:all .2s;
+}
+.unsent-contact-row:hover{border-color:var(--gold);background:rgba(200,169,110,0.06);}
+.unsent-contact-row.selected{border-color:var(--gold);background:rgba(200,169,110,0.1);}
+@media(max-width:640px){
+  #ecvmPanel1 > div[style*="grid-template-columns:1fr 1fr"]{display:flex!important;flex-direction:column!important;}
+  #ecvmPanel3 > div[style*="grid-template-columns:auto"]{display:flex!important;flex-direction:column!important;}
+  #ecvmDimScores,#ecvmPanel3 > div[style*="grid-template-columns:1fr 1fr"]{grid-template-columns:1fr!important;}
+  #cvMatchModal{padding:10px;}
+}
 </style>
 </head>
 <body>
@@ -1047,8 +1134,37 @@ body.theme-light .card-gold { background: linear-gradient(135deg,#ffffff 0%,rgba
 <!-- EMAIL -->
 <div class="page" id="page-email">
   <div class="card card-gold">
-    <div class="card-header"><div class="card-title"><span class="card-title-icon">📧</span>Compose & Send Email</div></div>
+    <div class="card-header">
+      <div class="card-title"><span class="card-title-icon">📧</span>Compose &amp; Send Email</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-teal btn-sm" onclick="emailToggleUnsentPanel()" id="unsentPanelBtn">👥 Choose from Not Yet Emailed</button>
+        <button class="btn btn-secondary btn-sm" onclick="emailOpenCVMatch()" id="cvMatchLaunchBtn" title="Match & optimize your CV against a JD before sending">🎯 JD–CV Match &amp; Optimize</button>
+      </div>
+    </div>
+
+    <!-- ── UNSENT CONTACTS PANEL (collapsible) ── -->
+    <div id="unsentContactsPanel" style="display:none;margin-bottom:18px">
+      <div style="background:var(--surface2);border:1px solid var(--border2);border-radius:12px;padding:16px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+          <div style="font-weight:700;font-size:13px;color:var(--gold2)">👥 HR Contacts Not Yet Emailed</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <input type="text" id="unsentSearch" placeholder="🔍 Search..." oninput="renderUnsentList()" style="width:180px;padding:6px 10px;font-size:12px">
+            <button class="btn btn-secondary btn-sm" onclick="emailToggleUnsentPanel()">✕ Close</button>
+          </div>
+        </div>
+        <div id="unsentContactsList" style="max-height:240px;overflow-y:auto;display:flex;flex-direction:column;gap:6px"></div>
+        <div id="unsentEmpty" class="alert alert-info" style="display:none;font-size:12px;margin:0">All contacts have already been emailed, or no contacts with email exist.</div>
+      </div>
+    </div>
+
     <div id="gmailWarn" class="alert alert-warn" style="display:none">⚠️ Gmail not connected. <a href="#" onclick="showSetup('gmail')" style="color:var(--gold);font-weight:700">Connect Gmail →</a></div>
+
+    <!-- CV Match optimization banner (shown after optimization) -->
+    <div id="cvMatchBanner" style="display:none" class="alert alert-success">
+      ✨ <strong>Optimized CV ready!</strong> <span id="cvMatchBannerText"></span>
+      <button class="btn btn-sm btn-secondary" onclick="emailClearCVMatch()" style="margin-left:auto">✕ Dismiss</button>
+    </div>
+
     <div class="form-row">
       <div class="form-group">
         <label>To (HR Email)</label>
@@ -1076,7 +1192,7 @@ body.theme-light .card-gold { background: linear-gradient(135deg,#ffffff 0%,rgba
       <div class="form-group">
         <label>📄 Attach Cover Letter <span style="color:var(--text3);font-size:10px;text-transform:none;letter-spacing:0">(optional)</span></label>
         <input type="file" id="coverLetterFile" accept=".pdf,.doc,.docx" onchange="handleCLUpload(event)">
-        <div id="clStatus" style="font-size:12px;color:var(--purple);margin-top:4px;"></div>
+        <div id="clStatus" style="font-size:12px;color:var(--purple2);margin-top:4px;"></div>
       </div>
     </div>
     <div class="form-group">
@@ -1100,6 +1216,256 @@ body.theme-light .card-gold { background: linear-gradient(135deg,#ffffff 0%,rgba
     </div>
   </div>
 </div>
+
+<!-- JD–CV MATCH MODAL (full-screen overlay, launched from Send Email) -->
+<div id="cvMatchModal" onclick="if(event.target===this)emailCloseCVMatch()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.88);backdrop-filter:blur(14px);z-index:2000;overflow-y:auto;padding:20px">
+  <!-- Sticky close bar — always visible at top, even when scrolled -->
+  <div style="position:sticky;top:0;z-index:10;background:rgba(8,11,18,0.96);backdrop-filter:blur(16px);border-bottom:1px solid var(--border2);padding:12px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin:-20px -20px 20px -20px">
+    <div>
+      <div style="font-family:Cormorant Garamond,serif;font-size:20px;font-weight:700;color:var(--gold2)">🎯 JD–CV Match &amp; Optimize</div>
+      <div style="font-size:11px;color:var(--text3);margin-top:2px">Optimize your CV for this job · Press <kbd style="background:var(--surface3);border:1px solid var(--border2);padding:1px 6px;border-radius:4px;font-size:10px">Esc</kbd> or click below to close</div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <div id="ecvmStepBadge" style="font-size:11px;color:var(--text3)">Step 1 of 4</div>
+      <button class="btn btn-secondary" onclick="emailCloseCVMatch()" style="font-weight:700;border-color:var(--border2)">✕ Close &amp; Return to Email</button>
+    </div>
+  </div>
+
+  <div style="max-width:1100px;margin:0 auto;padding-top:10px">">
+    <!-- Step bar -->
+    <div style="display:flex;align-items:center;gap:0;margin-bottom:24px;overflow-x:auto;padding-bottom:4px">
+      <div class="cvm-step active" id="ecvmStep1"><div class="cvm-step-num">1</div><div class="cvm-step-label">Input</div></div>
+      <div class="cvm-step-line" id="ecvmLine1"></div>
+      <div class="cvm-step" id="ecvmStep2"><div class="cvm-step-num">2</div><div class="cvm-step-label">Analysis</div></div>
+      <div class="cvm-step-line" id="ecvmLine2"></div>
+      <div class="cvm-step" id="ecvmStep3"><div class="cvm-step-num">3</div><div class="cvm-step-label">Score</div></div>
+      <div class="cvm-step-line" id="ecvmLine3"></div>
+      <div class="cvm-step" id="ecvmStep4"><div class="cvm-step-num">4</div><div class="cvm-step-label">Optimize &amp; Send</div></div>
+    </div>
+
+    <!-- PANEL 1: INPUT -->
+    <div id="ecvmPanel1">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px">
+
+        <!-- JD Column -->
+        <div class="card card-gold" style="margin:0">
+          <div class="card-header" style="margin-bottom:12px">
+            <div class="card-title" style="font-size:15px"><span class="card-title-icon">📋</span>Job Description</div>
+          </div>
+          <div class="form-group" style="margin-bottom:10px">
+            <label>Company / Role (optional)</label>
+            <input type="text" id="ecvmCompany" placeholder="e.g. Bosch India — ADAS Engineer">
+          </div>
+          <div class="form-group" style="margin:0">
+            <label>Paste Full JD Text</label>
+            <textarea id="ecvmJD" rows="13" placeholder="Paste the complete job description here..."></textarea>
+          </div>
+        </div>
+
+        <!-- CV Column -->
+        <div class="card card-gold" style="margin:0">
+          <div class="card-header" style="margin-bottom:12px">
+            <div class="card-title" style="font-size:15px"><span class="card-title-icon">👤</span>Your CV / Resume</div>
+          </div>
+
+          <!-- Import options -->
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">
+            <button class="btn btn-secondary btn-sm ecvm-input-tab active" id="ecvmTabPaste" onclick="ecvmSwitchInputTab('paste')">✏️ Paste Text</button>
+            <button class="btn btn-secondary btn-sm ecvm-input-tab" id="ecvmTabFile" onclick="ecvmSwitchInputTab('file')">📁 Import File</button>
+            <button class="btn btn-secondary btn-sm ecvm-input-tab" id="ecvmTabSaved" onclick="ecvmSwitchInputTab('saved')">📎 Use Saved CV</button>
+          </div>
+
+          <!-- Paste tab -->
+          <div id="ecvmInputPaste">
+            <div class="form-group" style="margin:0">
+              <label>Paste CV Text</label>
+              <textarea id="ecvmCV" rows="11" placeholder="Paste your full CV / resume text here...&#10;&#10;Open your CV in Word or PDF → Ctrl+A → Ctrl+C → paste here."></textarea>
+            </div>
+          </div>
+
+          <!-- File import tab -->
+          <div id="ecvmInputFile" style="display:none">
+            <div class="upload-zone" id="ecvmFileZone" onclick="document.getElementById('ecvmFileInput').click()" style="min-height:120px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px">
+              <div style="font-size:36px">📂</div>
+              <div id="ecvmFileZoneLabel" style="font-weight:600;font-size:13px">Click to browse your CV file</div>
+              <div style="font-size:11px;color:var(--text3)">Supports PDF · DOCX · TXT · Max 5MB</div>
+            </div>
+            <input type="file" id="ecvmFileInput" accept=".pdf,.docx,.doc,.txt" style="display:none" onchange="ecvmHandleFileImport(event)">
+            <div id="ecvmFileStatus" style="font-size:12px;color:var(--text2);margin-top:8px"></div>
+            <!-- Preview of extracted text -->
+            <div id="ecvmFilePreviewWrap" style="display:none;margin-top:10px">
+              <label style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:1px">Extracted Text Preview</label>
+              <textarea id="ecvmFilePreview" rows="7" style="margin-top:5px;font-size:12px;color:var(--text2);" readonly></textarea>
+            </div>
+          </div>
+
+          <!-- Saved CV tab -->
+          <div id="ecvmInputSaved" style="display:none">
+            <div class="alert alert-info" style="font-size:12px;margin-bottom:10px">
+              Select a CV version saved in your My CV tab. The text content will be used for analysis.
+            </div>
+            <div id="ecvmSavedCVList" style="display:flex;flex-direction:column;gap:8px;max-height:220px;overflow-y:auto"></div>
+            <div id="ecvmSavedCVEmpty" class="alert alert-warn" style="display:none;font-size:12px">No CV versions saved yet. Upload one in the My CV tab first.</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center">
+        <button class="btn btn-primary" onclick="ecvmRunAnalysis()" id="ecvmAnalyzeBtn" style="padding:11px 28px;font-size:14px">🎯 Analyse &amp; Score My CV</button>
+        <button class="btn btn-secondary" onclick="ecvmClearAll()">🗑 Clear</button>
+        <span id="ecvmAnalyzeStatus" style="font-size:12px;color:var(--red2)"></span>
+      </div>
+    </div>
+
+    <!-- PANEL 2: LOADING -->
+    <div id="ecvmPanel2" style="display:none">
+      <div class="card card-gold" style="text-align:center;padding:52px 24px">
+        <div style="font-size:60px;margin-bottom:18px;animation:pulse 2s ease infinite">🧠</div>
+        <div style="font-family:Cormorant Garamond,serif;font-size:22px;font-weight:700;color:var(--gold2);margin-bottom:10px">Analysing your CV against the JD</div>
+        <div id="ecvmLoadingMsg" style="font-size:13px;color:var(--text2);margin-bottom:26px">Extracting JD requirements...</div>
+        <div style="background:var(--surface3);border-radius:8px;height:7px;width:300px;margin:0 auto 10px;overflow:hidden">
+          <div id="ecvmProgressBar" style="height:100%;width:0%;background:linear-gradient(90deg,var(--gold),var(--gold2));border-radius:8px;transition:width 0.9s ease"></div>
+        </div>
+        <div id="ecvmProgressPct" style="font-size:12px;color:var(--text3)">0%</div>
+      </div>
+    </div>
+
+    <!-- PANEL 3: SCORE -->
+    <div id="ecvmPanel3" style="display:none">
+      <!-- Score hero -->
+      <div class="card card-gold" style="margin-bottom:18px">
+        <div style="display:grid;grid-template-columns:auto 1fr;gap:28px;align-items:center">
+          <div style="text-align:center">
+            <div style="position:relative;width:130px;height:130px;margin:0 auto">
+              <svg width="130" height="130" viewBox="0 0 130 130">
+                <circle cx="65" cy="65" r="56" fill="none" stroke="var(--surface3)" stroke-width="10"/>
+                <circle cx="65" cy="65" r="56" fill="none" stroke="var(--gold)" stroke-width="10"
+                  stroke-linecap="round" stroke-dasharray="351.86" id="ecvmScoreArc"
+                  stroke-dashoffset="351.86" transform="rotate(-90 65 65)" style="transition:stroke-dashoffset 1.5s cubic-bezier(0.34,1.1,0.64,1)"/>
+              </svg>
+              <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center">
+                <div id="ecvmScoreNum" style="font-family:Cormorant Garamond,serif;font-size:36px;font-weight:700;color:var(--gold2);line-height:1">0</div>
+                <div style="font-size:10px;color:var(--text3);letter-spacing:1px">/ 100</div>
+              </div>
+            </div>
+            <div id="ecvmScoreLabel" style="font-size:12px;font-weight:700;margin-top:8px;color:var(--gold2)">—</div>
+          </div>
+          <div>
+            <div id="ecvmRoleTitle" style="font-family:Cormorant Garamond,serif;font-size:20px;font-weight:700;margin-bottom:8px"></div>
+            <div id="ecvmScoreSummary" style="font-size:13px;color:var(--text2);line-height:1.8;margin-bottom:14px"></div>
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px" id="ecvmMiniStats"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Dimension bars -->
+      <div class="card" style="margin-bottom:18px">
+        <div class="card-header"><div class="card-title"><span class="card-title-icon">📊</span>Score by Dimension</div></div>
+        <div id="ecvmDimScores" style="display:grid;grid-template-columns:1fr 1fr;gap:14px"></div>
+      </div>
+
+      <!-- Gap zones -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px">
+        <div class="card" style="margin:0;border-color:rgba(34,197,94,0.25)">
+          <div class="card-header" style="margin-bottom:10px"><div class="card-title" style="font-size:14px;color:var(--green2)">✅ Matching Strengths</div><div id="ecvmMatchCount" style="font-size:11px;color:var(--green2)"></div></div>
+          <div id="ecvmMatches" style="display:flex;flex-wrap:wrap;gap:7px"></div>
+        </div>
+        <div class="card" style="margin:0;border-color:rgba(239,68,68,0.25)">
+          <div class="card-header" style="margin-bottom:10px"><div class="card-title" style="font-size:14px;color:var(--red2)">❌ Missing Skills</div><div id="ecvmMissingCount" style="font-size:11px;color:var(--red2)"></div></div>
+          <div id="ecvmMissing" style="display:flex;flex-wrap:wrap;gap:7px"></div>
+        </div>
+        <div class="card" style="margin:0;border-color:rgba(249,115,22,0.25)">
+          <div class="card-header" style="margin-bottom:10px"><div class="card-title" style="font-size:14px;color:var(--orange2)">⚠️ Weak Areas</div><div id="ecvmWeakCount" style="font-size:11px;color:var(--orange2)"></div></div>
+          <div id="ecvmWeak" style="display:flex;flex-wrap:wrap;gap:7px"></div>
+        </div>
+        <div class="card" style="margin:0;border-color:rgba(139,92,246,0.25)">
+          <div class="card-header" style="margin-bottom:10px"><div class="card-title" style="font-size:14px;color:var(--purple2)">🤖 ATS Insights</div></div>
+          <div id="ecvmATS" style="font-size:12px;color:var(--text2);line-height:1.8"></div>
+        </div>
+      </div>
+
+      <!-- Recommendations -->
+      <div class="card card-gold" style="margin-bottom:18px">
+        <div class="card-header"><div class="card-title"><span class="card-title-icon">💡</span>Priority Action Plan</div></div>
+        <div id="ecvmRecommendations" style="font-size:13px;color:var(--text2);line-height:1.9"></div>
+      </div>
+
+      <div style="display:flex;gap:12px;flex-wrap:wrap">
+        <button class="btn btn-primary" onclick="ecvmRunOptimize()" id="ecvmOptimizeBtn" style="font-size:14px;padding:11px 26px">✨ Optimize My CV for This JD</button>
+        <button class="btn btn-secondary" onclick="ecvmGoStep(1)">← Re-analyse</button>
+      </div>
+    </div>
+
+    <!-- PANEL 4: OPTIMIZED OUTPUT + SAVE + SEND -->
+    <div id="ecvmPanel4" style="display:none">
+      <div class="card card-gold" style="margin-bottom:18px">
+        <div class="card-header">
+          <div class="card-title"><span class="card-title-icon">✨</span>AI-Optimized CV</div>
+          <span id="ecvmNewScoreBadge" style="background:linear-gradient(135deg,var(--gold),var(--gold2));color:#080b12;font-size:12px;font-weight:700;padding:4px 14px;border-radius:20px"></span>
+        </div>
+        <div id="ecvmOptimizeSummary" class="alert alert-success" style="font-size:12px;margin-bottom:14px"></div>
+
+        <!-- View toggle -->
+        <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+          <button class="btn btn-sm" id="ecvmShowOptBtn" onclick="ecvmToggleView('opt')" style="background:linear-gradient(135deg,var(--gold),var(--gold2));color:#080b12">✨ Optimized</button>
+          <button class="btn btn-secondary btn-sm" id="ecvmShowOrigBtn" onclick="ecvmToggleView('orig')">Original</button>
+        </div>
+
+        <!-- Editable optimized CV -->
+        <div id="ecvmOptimizedCV" style="background:var(--surface3);border:1px solid var(--border2);border-radius:10px;padding:16px;max-height:420px;overflow-y:auto">
+          <textarea id="ecvmOptimizedText" style="width:100%;background:transparent;border:none;outline:none;font-size:13px;line-height:1.95;color:var(--text);resize:none;min-height:300px;font-family:DM Sans,sans-serif;" spellcheck="false" placeholder="Optimized CV will appear here..."></textarea>
+        </div>
+        <div id="ecvmOriginalCV" style="background:var(--surface3);border:1px solid var(--border2);border-radius:10px;padding:16px;font-size:13px;line-height:1.95;color:var(--text2);white-space:pre-wrap;max-height:420px;overflow-y:auto;display:none"></div>
+
+        <div style="margin-top:12px;font-size:12px;color:var(--text3)">💡 You can edit the optimized CV text above before saving or sending.</div>
+      </div>
+
+      <!-- Save to My CV section -->
+      <div class="card" style="margin-bottom:18px;border-color:rgba(200,169,110,0.2)">
+        <div class="card-header">
+          <div class="card-title"><span class="card-title-icon">💾</span>Save Optimized CV to My CV Tab</div>
+        </div>
+        <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap">
+          <div class="form-group" style="flex:1;min-width:200px;margin:0">
+            <label>CV Version Name / Label</label>
+            <input type="text" id="ecvmSaveLabel" placeholder="e.g. ADAS-Optimized Jan 2025, Bosch Application...">
+          </div>
+          <button class="btn btn-primary" onclick="ecvmSaveToMyCVTab()" id="ecvmSaveBtn">💾 Save to My CV Tab</button>
+          <span id="ecvmSaveStatus" style="font-size:12px;color:var(--green2);align-self:center"></span>
+        </div>
+        <div style="font-size:11px;color:var(--text3);margin-top:8px">After saving, the optimized CV will appear in My CV tab and can be attached to any future email.</div>
+      </div>
+
+      <!-- Changelog -->
+      <div class="card" style="margin-bottom:18px">
+        <div class="card-header"><div class="card-title"><span class="card-title-icon">🔍</span>Changes Made &amp; Why</div></div>
+        <div id="ecvmChangelog" style="font-size:13px;color:var(--text2);line-height:1.9"></div>
+      </div>
+
+      <!-- Send email CTA -->
+      <div class="card" style="background:linear-gradient(135deg,rgba(200,169,110,0.08),rgba(34,211,200,0.04));border-color:rgba(200,169,110,0.25);margin-bottom:18px">
+        <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+          <div style="flex:1">
+            <div style="font-weight:700;font-size:15px;color:var(--gold2);margin-bottom:4px">📤 Ready to Send?</div>
+            <div style="font-size:13px;color:var(--text2)">Save the optimized CV above, then close this panel to send your email — it will be auto-selected.</div>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn btn-primary" onclick="ecvmSaveAndSend()">💾 Save CV &amp; Go to Email →</button>
+            <button class="btn btn-secondary" onclick="ecvmGoStep(1)">🔄 Start Over</button>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <button class="btn btn-secondary" onclick="ecvmCopyOptimized()">📋 Copy Optimized CV</button>
+        <button class="btn btn-secondary" onclick="ecvmDownloadOptimized()">⬇ Download .txt</button>
+        <button class="btn btn-secondary" onclick="ecvmGoStep(3)">← Back to Score</button>
+      </div>
+    </div>
+
+  </div><!-- /cvMatchModal inner -->
+</div><!-- /cvMatchModal -->
+
 
 <!-- TEMPLATES -->
 <div class="page" id="page-templates">
@@ -1172,6 +1538,7 @@ body.theme-light .card-gold { background: linear-gradient(135deg,#ffffff 0%,rgba
     <button class="sub-tab" onclick="switchAITab('naukri',this)">🔎 Naukri Parser</button>
     <button class="sub-tab" onclick="switchAITab('emailwriter',this)">✍️ Email Writer</button>
     <button class="sub-tab" onclick="switchAITab('interviewprep',this)">🎤 Interview Prep</button>
+    <button class="sub-tab" onclick="switchAITab('cvmatch',this)">🎯 JD–CV Match & Optimize</button>
   </div>
 
   <!-- ══ TAB: HR EXTRACTOR ══ -->
@@ -1366,6 +1733,203 @@ body.theme-light .card-gold { background: linear-gradient(135deg,#ffffff 0%,rgba
 
 
 
+
+
+  <!-- ══ TAB: JD–CV MATCH & OPTIMIZE ══ -->
+  <div id="aiTab-cvmatch" class="ai-tab-panel" style="display:none">
+
+    <!-- STEP INDICATOR -->
+    <div style="display:flex;align-items:center;gap:0;margin-bottom:22px;overflow-x:auto;padding-bottom:4px">
+      <div class="cvm-step active" id="cvmStep1" onclick="cvmGoStep(1)" style="cursor:pointer">
+        <div class="cvm-step-num">1</div><div class="cvm-step-label">Input</div>
+      </div>
+      <div class="cvm-step-line" id="cvmLine1"></div>
+      <div class="cvm-step" id="cvmStep2" style="cursor:pointer">
+        <div class="cvm-step-num">2</div><div class="cvm-step-label">Analysis</div>
+      </div>
+      <div class="cvm-step-line" id="cvmLine2"></div>
+      <div class="cvm-step" id="cvmStep3" style="cursor:pointer">
+        <div class="cvm-step-num">3</div><div class="cvm-step-label">Score</div>
+      </div>
+      <div class="cvm-step-line" id="cvmLine3"></div>
+      <div class="cvm-step" id="cvmStep4" style="cursor:pointer">
+        <div class="cvm-step-num">4</div><div class="cvm-step-label">Optimize</div>
+      </div>
+    </div>
+
+    <!-- PANEL 1: INPUT -->
+    <div id="cvmPanel1">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px">
+        <div class="card card-gold" style="margin:0">
+          <div class="card-header" style="margin-bottom:14px">
+            <div class="card-title" style="font-size:16px"><span class="card-title-icon">📋</span>Job Description</div>
+            <span style="font-size:11px;color:var(--text3)">Paste full JD text</span>
+          </div>
+          <div class="form-group" style="margin-bottom:10px">
+            <label>Company Name (optional)</label>
+            <input type="text" id="cvmCompany" placeholder="e.g. Bosch India, Tata Motors...">
+          </div>
+          <div class="form-group" style="margin:0">
+            <label>Job Description Text</label>
+            <textarea id="cvmJD" rows="14" placeholder="Paste the full job description here...&#10;&#10;We are looking for a Senior Automotive Engineer with 7+ years of experience in ADAS, Vehicle Dynamics, NVH testing. Must have hands-on experience with MATLAB/Simulink, AUTOSAR, CAN protocols. Strong knowledge of ISO 26262 required..."></textarea>
+          </div>
+        </div>
+        <div class="card card-gold" style="margin:0">
+          <div class="card-header" style="margin-bottom:14px">
+            <div class="card-title" style="font-size:16px"><span class="card-title-icon">👤</span>Your CV / Resume</div>
+            <span style="font-size:11px;color:var(--text3)">Paste full CV text</span>
+          </div>
+          <div class="alert alert-info" style="font-size:11px;margin-bottom:10px">
+            Open your CV in Word/PDF, select all text (Ctrl+A), copy and paste below.
+          </div>
+          <div class="form-group" style="margin:0">
+            <label>Your CV / Resume Text</label>
+            <textarea id="cvmCV" rows="14" placeholder="Paste your full CV text here...&#10;&#10;AKASH SHAH | Automotive Engineer | 8+ Years&#10;&#10;SUMMARY: Experienced Automotive Engineer specialising in NVH analysis, ADAS validation...&#10;&#10;EXPERIENCE:&#10;Senior Engineer — Tata Motors (2019–present)&#10;• Led NVH reduction project...&#10;&#10;SKILLS: MATLAB, NVH testing, Vehicle Dynamics..."></textarea>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center">
+        <button class="btn btn-primary" onclick="cvmRunAnalysis()" id="cvmAnalyzeBtn" style="padding:11px 28px;font-size:14px">🎯 Analyse &amp; Score My CV</button>
+        <button class="btn btn-secondary" onclick="cvmClearAll()">🗑 Clear All</button>
+        <button class="btn btn-secondary btn-sm" onclick="cvmLoadSavedCV()">📎 Load Saved CV Text</button>
+        <span id="cvmAnalyzeStatus" style="font-size:12px;color:var(--red2)"></span>
+      </div>
+    </div>
+
+    <!-- PANEL 2: LOADING -->
+    <div id="cvmPanel2" style="display:none">
+      <div class="card card-gold" style="text-align:center;padding:52px 24px">
+        <div style="font-size:60px;margin-bottom:20px;animation:pulse 2s ease infinite">🧠</div>
+        <div style="font-family:'Cormorant Garamond',serif;font-size:24px;font-weight:700;color:var(--gold2);margin-bottom:12px">Analysing your CV against the JD</div>
+        <div id="cvmLoadingMsg" style="font-size:13px;color:var(--text2);margin-bottom:28px;transition:all .4s">Extracting required skills from Job Description...</div>
+        <div style="background:var(--surface3);border-radius:8px;height:7px;width:300px;margin:0 auto 10px;overflow:hidden">
+          <div id="cvmProgressBar" style="height:100%;width:0%;background:linear-gradient(90deg,var(--gold),var(--gold2));border-radius:8px;transition:width 0.9s ease"></div>
+        </div>
+        <div id="cvmProgressPct" style="font-size:12px;color:var(--text3)">0%</div>
+      </div>
+    </div>
+
+    <!-- PANEL 3: SCORE & GAP ANALYSIS -->
+    <div id="cvmPanel3" style="display:none">
+
+      <!-- Score Hero Card -->
+      <div class="card card-gold" style="margin-bottom:18px">
+        <div style="display:grid;grid-template-columns:auto 1fr;gap:32px;align-items:center">
+          <div style="text-align:center;flex-shrink:0">
+            <div style="position:relative;width:140px;height:140px;margin:0 auto">
+              <svg width="140" height="140" viewBox="0 0 140 140" style="display:block">
+                <circle cx="70" cy="70" r="60" fill="none" stroke="var(--surface3)" stroke-width="11"/>
+                <circle cx="70" cy="70" r="60" fill="none" stroke="url(#cvmScoreGrad)" stroke-width="11"
+                  stroke-linecap="round" stroke-dasharray="376.99" id="cvmScoreArc"
+                  stroke-dashoffset="376.99" transform="rotate(-90 70 70)" style="transition:stroke-dashoffset 1.6s cubic-bezier(0.34,1.1,0.64,1)"/>
+                <defs>
+                  <linearGradient id="cvmScoreGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stop-color="#c8a96e"/>
+                    <stop offset="100%" stop-color="#f0dba8"/>
+                  </linearGradient>
+                </defs>
+              </svg>
+              <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center">
+                <div id="cvmScoreNum" style="font-family:Cormorant Garamond,serif;font-size:42px;font-weight:700;color:var(--gold2);line-height:1">0</div>
+                <div style="font-size:11px;color:var(--text3);letter-spacing:1px">/ 100</div>
+              </div>
+            </div>
+            <div id="cvmScoreLabel" style="font-size:13px;font-weight:700;margin-top:10px;color:var(--gold2)">—</div>
+          </div>
+          <div>
+            <div style="font-family:Cormorant Garamond,serif;font-size:22px;font-weight:700;margin-bottom:8px" id="cvmRoleTitle">Match Analysis Complete</div>
+            <div id="cvmScoreSummary" style="font-size:13px;color:var(--text2);line-height:1.8;margin-bottom:18px"></div>
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px" id="cvmMiniStats"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Dimension Score Bars -->
+      <div class="card" style="margin-bottom:18px">
+        <div class="card-header"><div class="card-title"><span class="card-title-icon">📊</span>Score by Dimension</div></div>
+        <div id="cvmDimScores" style="display:grid;grid-template-columns:1fr 1fr;gap:16px"></div>
+      </div>
+
+      <!-- 4-zone gap analysis -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px">
+        <div class="card" style="margin:0;border-color:rgba(34,197,94,0.25);background:linear-gradient(145deg,var(--surface),rgba(34,197,94,0.03))">
+          <div class="card-header" style="margin-bottom:14px">
+            <div class="card-title" style="font-size:15px;color:var(--green2)">✅ Matching Strengths</div>
+            <div id="cvmMatchCount" style="font-size:11px;padding:2px 8px;background:rgba(34,197,94,0.1);color:var(--green2);border-radius:10px"></div>
+          </div>
+          <div id="cvmMatches" style="display:flex;flex-wrap:wrap;gap:7px"></div>
+        </div>
+        <div class="card" style="margin:0;border-color:rgba(239,68,68,0.25);background:linear-gradient(145deg,var(--surface),rgba(239,68,68,0.03))">
+          <div class="card-header" style="margin-bottom:14px">
+            <div class="card-title" style="font-size:15px;color:var(--red2)">❌ Missing Skills</div>
+            <div id="cvmMissingCount" style="font-size:11px;padding:2px 8px;background:rgba(239,68,68,0.1);color:var(--red2);border-radius:10px"></div>
+          </div>
+          <div id="cvmMissing" style="display:flex;flex-wrap:wrap;gap:7px"></div>
+        </div>
+        <div class="card" style="margin:0;border-color:rgba(249,115,22,0.25);background:linear-gradient(145deg,var(--surface),rgba(249,115,22,0.03))">
+          <div class="card-header" style="margin-bottom:14px">
+            <div class="card-title" style="font-size:15px;color:var(--orange2)">⚠️ Weak / Partial Match</div>
+            <div id="cvmWeakCount" style="font-size:11px;padding:2px 8px;background:rgba(249,115,22,0.1);color:var(--orange2);border-radius:10px"></div>
+          </div>
+          <div id="cvmWeak" style="display:flex;flex-wrap:wrap;gap:7px"></div>
+        </div>
+        <div class="card" style="margin:0;border-color:rgba(139,92,246,0.25);background:linear-gradient(145deg,var(--surface),rgba(139,92,246,0.03))">
+          <div class="card-header" style="margin-bottom:14px">
+            <div class="card-title" style="font-size:15px;color:var(--purple2)">🤖 ATS Compatibility</div>
+          </div>
+          <div id="cvmATS" style="font-size:12px;color:var(--text2);line-height:1.9"></div>
+        </div>
+      </div>
+
+      <!-- Priority Recommendations -->
+      <div class="card card-gold" style="margin-bottom:18px">
+        <div class="card-header">
+          <div class="card-title"><span class="card-title-icon">💡</span>Priority Action Plan</div>
+          <span style="font-size:11px;color:var(--text3)">What to fix first to increase shortlisting odds</span>
+        </div>
+        <div id="cvmRecommendations" style="font-size:13px;color:var(--text2);line-height:1.9"></div>
+      </div>
+
+      <div style="display:flex;gap:12px;flex-wrap:wrap">
+        <button class="btn btn-primary" onclick="cvmRunOptimize()" id="cvmOptimizeBtn" style="padding:11px 26px;font-size:14px">✨ Optimize My CV for This JD</button>
+        <button class="btn btn-secondary" onclick="cvmGoStep(1)">← Re-analyse</button>
+        <button class="btn btn-secondary btn-sm" onclick="cvmCopyAnalysis()">📋 Copy Full Analysis</button>
+      </div>
+    </div>
+
+    <!-- PANEL 4: OPTIMIZED CV OUTPUT -->
+    <div id="cvmPanel4" style="display:none">
+      <div class="card card-gold" style="margin-bottom:18px">
+        <div class="card-header">
+          <div class="card-title"><span class="card-title-icon">✨</span>AI-Optimized CV</div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span id="cvmNewScoreBadge" style="background:linear-gradient(135deg,var(--gold),var(--gold2));color:#080b12;font-size:12px;font-weight:700;padding:4px 14px;border-radius:20px"></span>
+            <span style="font-size:11px;color:var(--text3)">Groq · LLaMA 3.1</span>
+          </div>
+        </div>
+        <div id="cvmOptimizeSummary" class="alert alert-success" style="font-size:12px;margin-bottom:16px"></div>
+        <div style="display:flex;gap:8px;margin-bottom:14px">
+          <button class="btn btn-sm" id="cvmShowOptBtn" onclick="cvmToggleView('opt')" style="background:linear-gradient(135deg,var(--gold),var(--gold2));color:#080b12">✨ Optimized Version</button>
+          <button class="btn btn-secondary btn-sm" id="cvmShowOrigBtn" onclick="cvmToggleView('orig')">Original</button>
+        </div>
+        <div id="cvmOptimizedCV" style="background:var(--surface3);border:1px solid var(--border2);border-radius:10px;padding:20px;font-size:13px;line-height:1.95;color:var(--text);white-space:pre-wrap;max-height:540px;overflow-y:auto;"></div>
+        <div id="cvmOriginalCV" style="background:var(--surface3);border:1px solid var(--border2);border-radius:10px;padding:20px;font-size:13px;line-height:1.95;color:var(--text2);white-space:pre-wrap;max-height:540px;overflow-y:auto;display:none;"></div>
+      </div>
+
+      <div class="card" style="margin-bottom:18px">
+        <div class="card-header"><div class="card-title"><span class="card-title-icon">🔍</span>Changes Made &amp; Reasoning</div></div>
+        <div id="cvmChangelog" style="font-size:13px;color:var(--text2);line-height:1.9"></div>
+      </div>
+
+      <div style="display:flex;gap:12px;flex-wrap:wrap">
+        <button class="btn btn-primary" onclick="cvmCopyOptimized()">📋 Copy Optimized CV</button>
+        <button class="btn btn-secondary" onclick="cvmDownloadOptimized()">⬇ Download .txt</button>
+        <button class="btn btn-secondary" onclick="cvmGoStep(3)">← Back to Score</button>
+        <button class="btn btn-secondary" onclick="cvmGoStep(1)">🔄 Start Over</button>
+      </div>
+    </div>
+
+  </div><!-- /aiTab-cvmatch -->
 
 <!-- PLANNING -->
 <div class="page" id="page-planning">
@@ -5963,6 +6527,1141 @@ function addNaukriAsJob(title, company, url){
 
 
 // ============================================================
+// SEND EMAIL — "Choose from Not Yet Emailed" Panel
+// ============================================================
+
+function emailToggleUnsentPanel(){
+  const panel = document.getElementById('unsentContactsPanel');
+  const isOpen = panel.style.display !== 'none';
+  panel.style.display = isOpen ? 'none' : 'block';
+  if(!isOpen){ renderUnsentList(); }
+}
+
+function renderUnsentList(){
+  const query = (document.getElementById('unsentSearch')?.value||'').toLowerCase().trim();
+  const listEl = document.getElementById('unsentContactsList');
+  const emptyEl = document.getElementById('unsentEmpty');
+  if(!listEl) return;
+
+  const unsentContacts = contacts.filter(ct => {
+    if(!ct.email || !ct.email.trim()) return false;
+    const sent = getContactEmailStatus(ct.email).sent;
+    if(sent) return false;
+    if(query){
+      const haystack = (ct.name + ' ' + ct.company + ' ' + ct.email).toLowerCase();
+      if(!haystack.includes(query)) return false;
+    }
+    return true;
+  });
+
+  if(!unsentContacts.length){
+    listEl.innerHTML = '';
+    emptyEl.style.display = 'flex';
+    return;
+  }
+  emptyEl.style.display = 'none';
+
+  listEl.innerHTML = unsentContacts.map(ct => `
+    <div class="unsent-contact-row" onclick="emailSelectUnsentContact('${ct.id}')" id="unsentRow_${ct.id}">
+      <div style="width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--gold),var(--gold2));display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#080b12;flex-shrink:0">
+        ${(ct.name||'?')[0].toUpperCase()}
+      </div>
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${ct.name||'Unknown'}</div>
+        <div style="font-size:11px;color:var(--text3)">${ct.company||''}</div>
+      </div>
+      <div style="font-size:12px;color:var(--teal2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px">${ct.email}</div>
+      <button class="btn btn-primary btn-sm" onclick="event.stopPropagation();emailSelectUnsentContact('${ct.id}')">Select →</button>
+    </div>`).join('');
+}
+
+function emailSelectUnsentContact(id){
+  const ct = contacts.find(c => c.id === id);
+  if(!ct) return;
+  // Fill email To field
+  document.getElementById('emailTo').value = ct.email || '';
+  // Update contact picker dropdown to match
+  const picker = document.getElementById('emailContactPick');
+  if(picker){
+    for(const opt of picker.options){
+      if(opt.value === id){ picker.value = id; break; }
+    }
+  }
+  // Highlight selected row briefly
+  document.querySelectorAll('.unsent-contact-row').forEach(r => r.classList.remove('selected'));
+  const row = document.getElementById('unsentRow_' + id);
+  if(row) row.classList.add('selected');
+  // Close panel after short delay
+  setTimeout(()=>{ document.getElementById('unsentContactsPanel').style.display='none'; }, 600);
+}
+
+// ============================================================
+// SEND EMAIL — JD–CV MATCH MODAL CONTROLLER
+// ============================================================
+// State for the email-integrated CVM
+const ECVM = {
+  jd:'', cv:'', company:'',
+  analysis:null, optimized:null,
+  score:0, savedCVId:null,
+  importedFileData:null, importedFileName:null, // base64 data of imported file
+  activeInputTab:'paste'
+};
+
+function emailOpenCVMatch(){
+  const modal = document.getElementById('cvMatchModal');
+  modal.style.display = 'block';
+  document.body.style.overflow = 'hidden';
+  // Push header & nav behind modal while it's open
+  const header = document.querySelector('.header');
+  const nav    = document.querySelector('.nav');
+  if(header) header.style.zIndex = '1';
+  if(nav)    nav.style.zIndex    = '1';
+  ecvmGoStep(1);
+  ecvmPopulateSavedCVs();
+  // Scroll modal to top
+  modal.scrollTop = 0;
+}
+
+function emailCloseCVMatch(){
+  const modal = document.getElementById('cvMatchModal');
+  modal.style.display = 'none';
+  document.body.style.overflow = '';
+  // Restore header & nav z-index
+  const header = document.querySelector('.header');
+  const nav    = document.querySelector('.nav');
+  if(header) header.style.zIndex = '';
+  if(nav)    nav.style.zIndex    = '';
+}
+
+function ecvmGoStep(n){
+  const stepLabels=['','Input','Analysis','Score','Optimize & Send'];
+  for(let i=1;i<=4;i++){
+    const step = document.getElementById('ecvmStep'+i);
+    const panel = document.getElementById('ecvmPanel'+i);
+    const line  = document.getElementById('ecvmLine'+i);
+    if(step){ step.classList.remove('active','done'); if(i<n) step.classList.add('done'); else if(i===n) step.classList.add('active'); }
+    if(panel) panel.style.display = i===n ? 'block' : 'none';
+    if(line) line.classList.toggle('done', i<n);
+  }
+  // Update step badge in sticky header
+  const badge = document.getElementById('ecvmStepBadge');
+  if(badge) badge.textContent = 'Step '+n+' of 4 — '+stepLabels[n];
+  // Scroll modal to top on step change
+  const modal = document.getElementById('cvMatchModal');
+  if(modal) modal.scrollTop = 0;
+}
+
+function ecvmClearAll(){
+  ['ecvmJD','ecvmCV','ecvmCompany'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+  document.getElementById('ecvmAnalyzeStatus').textContent = '';
+  document.getElementById('ecvmFileStatus').textContent = '';
+  document.getElementById('ecvmFilePreviewWrap').style.display = 'none';
+  ECVM.analysis=null; ECVM.optimized=null; ECVM.score=0;
+  ECVM.importedFileData=null; ECVM.importedFileName=null;
+  ecvmGoStep(1);
+}
+
+function ecvmSetProgress(pct, msg){
+  const bar = document.getElementById('ecvmProgressBar');
+  const pctEl = document.getElementById('ecvmProgressPct');
+  const msgEl = document.getElementById('ecvmLoadingMsg');
+  if(bar) bar.style.width = pct + '%';
+  if(pctEl) pctEl.textContent = pct + '%';
+  if(msgEl && msg) msgEl.textContent = msg;
+}
+
+// ── CV Input Tab Switcher ────────────────────────────────────
+function ecvmSwitchInputTab(tab){
+  ['paste','file','saved'].forEach(t => {
+    const btn = document.getElementById('ecvmTab'+t.charAt(0).toUpperCase()+t.slice(1));
+    const panel = document.getElementById('ecvmInput'+t.charAt(0).toUpperCase()+t.slice(1));
+    if(btn) btn.classList.toggle('active', t===tab);
+    if(panel) panel.style.display = t===tab ? 'block' : 'none';
+  });
+  ECVM.activeInputTab = tab;
+  if(tab==='saved') ecvmPopulateSavedCVs();
+}
+
+// ── Populate saved CV list ──────────────────────────────────
+function ecvmPopulateSavedCVs(){
+  const listEl = document.getElementById('ecvmSavedCVList');
+  const emptyEl = document.getElementById('ecvmSavedCVEmpty');
+  if(!listEl) return;
+
+  // cvVersions is the existing global from the CV tab
+  if(!cvVersions || !cvVersions.length){
+    listEl.innerHTML = '';
+    emptyEl.style.display = 'flex';
+    return;
+  }
+  emptyEl.style.display = 'none';
+
+  // We only show text-based CVs OR allow user to select any (note: binary CVs won't have text)
+  // Show all versions, note which have extractable text
+  listEl.innerHTML = cvVersions.map(v => `
+    <div class="unsent-contact-row" onclick="ecvmSelectSavedCV('${v.id}')" id="ecvmSavedRow_${v.id}">
+      <div style="font-size:22px">📄</div>
+      <div style="flex:1">
+        <div style="font-weight:600;font-size:13px">${v.label}</div>
+        <div style="font-size:11px;color:var(--text3)">${v.name} ${v.isDefault?'· <span style="color:var(--gold)">DEFAULT</span>':''}</div>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="event.stopPropagation();ecvmSelectSavedCV('${v.id}')">Use This</button>
+    </div>`).join('');
+}
+
+function ecvmSelectSavedCV(id){
+  const v = cvVersions.find(x=>x.id===id);
+  if(!v) return;
+  ECVM.savedCVId = id;
+  ECVM.importedFileName = v.name;
+  ECVM.importedFileData = v.data;
+
+  // Highlight row
+  document.querySelectorAll('#ecvmSavedCVList .unsent-contact-row').forEach(r=>r.classList.remove('selected'));
+  const row = document.getElementById('ecvmSavedRow_'+id);
+  if(row) row.classList.add('selected');
+
+  // Auto-populate save label
+  const labelEl = document.getElementById('ecvmSaveLabel');
+  if(labelEl && !labelEl.value) labelEl.value = v.label + ' (Optimized)';
+
+  // Try to load CV text in priority order:
+  // 1. jt2_cv_text (plain text saved separately)
+  // 2. If this is a .txt version (fromOptimizer), decode from base64
+  // 3. Ask user to paste
+
+  let cvText = lsGet('jt2_cv_text') || '';
+
+  if(!cvText && v.fromOptimizer && v.data){
+    // It was saved as plain text base64 — decode it
+    try{
+      cvText = decodeURIComponent(escape(atob(v.data)));
+    } catch(e){ cvText = ''; }
+  }
+
+  if(cvText && cvText.trim().length > 30){
+    document.getElementById('ecvmCV').value = cvText;
+    ecvmSwitchInputTab('paste');
+    const statusEl = document.getElementById('ecvmAnalyzeStatus');
+    if(statusEl) statusEl.textContent = '✅ CV text loaded from "'+v.label+'". Ready to analyse.';
+    setTimeout(()=>{ const el=document.getElementById('ecvmAnalyzeStatus'); if(el&&el.textContent.startsWith('✅')) el.textContent=''; }, 4000);
+  } else {
+    // Binary CV (PDF/DOCX) — can't extract here, guide user
+    ecvmSwitchInputTab('paste');
+    const statusEl = document.getElementById('ecvmAnalyzeStatus');
+    if(statusEl) statusEl.textContent = `📎 "${v.label}" selected. Since it's a binary file (PDF/DOCX), please paste its text in the box below for AI analysis.`;
+  }
+}
+
+// ── File Import (PDF / DOCX / TXT) ──────────────────────────
+async function ecvmHandleFileImport(event){
+  const file = event.target.files[0];
+  if(!file) return;
+  if(file.size > 5*1024*1024){ alert('File too large (max 5MB)'); return; }
+
+  const statusEl = document.getElementById('ecvmFileStatus');
+  const previewWrap = document.getElementById('ecvmFilePreviewWrap');
+  const previewEl = document.getElementById('ecvmFilePreview');
+  const zoneLabel = document.getElementById('ecvmFileZoneLabel');
+
+  statusEl.textContent = '⏳ Reading file...';
+  previewWrap.style.display = 'none';
+  ECVM.importedFileName = file.name;
+
+  try {
+    let extractedText = '';
+    const ext = file.name.split('.').pop().toLowerCase();
+
+    if(ext === 'txt'){
+      extractedText = await readFileAsText(file);
+
+    } else if(ext === 'docx' || ext === 'doc'){
+      // Use mammoth.js for DOCX
+      if(typeof mammoth === 'undefined'){
+        throw new Error('DOCX library not loaded. Please check your internet connection and refresh.');
+      }
+      const arrayBuffer = await readFileAsArrayBuffer(file);
+      const result = await mammoth.extractRawText({ arrayBuffer });
+      extractedText = result.value;
+      if(result.messages && result.messages.length){
+        console.log('Mammoth warnings:', result.messages);
+      }
+
+    } else if(ext === 'pdf'){
+      // Use PDF.js for PDF
+      if(typeof pdfjsLib === 'undefined'){
+        throw new Error('PDF library not loaded. Please check your internet connection and refresh.');
+      }
+      pdfjsLib.GlobalWorkerOptions.workerSrc =
+        'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+      const arrayBuffer = await readFileAsArrayBuffer(file);
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      const pages = [];
+      for(let i=1; i<=pdf.numPages; i++){
+        const page = await pdf.getPage(i);
+        const tc = await page.getTextContent();
+        pages.push(tc.items.map(item => item.str).join(' '));
+      }
+      extractedText = pages.join('\n\n');
+
+    } else {
+      throw new Error('Unsupported file type. Please use PDF, DOCX, or TXT.');
+    }
+
+    if(!extractedText || extractedText.trim().length < 30){
+      throw new Error('Could not extract readable text from this file. Try copy-pasting the CV text directly.');
+    }
+
+    // Success
+    extractedText = extractedText.trim();
+
+    // Store and show preview
+    ECVM.cv = extractedText;
+    document.getElementById('ecvmCV').value = extractedText; // also populate paste tab
+    zoneLabel.textContent = '✅ ' + file.name;
+    statusEl.innerHTML = `✅ Extracted <strong>${extractedText.split(/\s+/).length} words</strong> from ${file.name}`;
+    previewEl.value = extractedText.slice(0, 800) + (extractedText.length>800 ? '\n\n... (truncated preview)' : '');
+    previewWrap.style.display = 'block';
+
+    // Read as base64 for potential re-save
+    const base64 = await readFileAsBase64(file);
+    ECVM.importedFileData = base64;
+
+    // Pre-fill save label
+    const labelEl = document.getElementById('ecvmSaveLabel');
+    if(labelEl && !labelEl.value){
+      labelEl.value = file.name.replace(/\.[^.]+$/,'') + ' (Optimized)';
+    }
+
+  } catch(e) {
+    statusEl.textContent = '❌ ' + e.message;
+    zoneLabel.textContent = 'Click to browse your CV file';
+  }
+  event.target.value = ''; // reset input
+}
+
+// ── File reading helpers ─────────────────────────────────────
+function readFileAsText(file){
+  return new Promise((res,rej)=>{ const r=new FileReader(); r.onload=e=>res(e.target.result); r.onerror=rej; r.readAsText(file); });
+}
+function readFileAsArrayBuffer(file){
+  return new Promise((res,rej)=>{ const r=new FileReader(); r.onload=e=>res(e.target.result); r.onerror=rej; r.readAsArrayBuffer(file); });
+}
+function readFileAsBase64(file){
+  return new Promise((res,rej)=>{ const r=new FileReader(); r.onload=e=>res(e.target.result.split(',')[1]); r.onerror=rej; r.readAsDataURL(file); });
+}
+
+// ── Get current CV text for analysis ─────────────────────────
+function ecvmGetCVText(){
+  const tab = ECVM.activeInputTab;
+  if(tab === 'paste' || tab === 'saved'){
+    return (document.getElementById('ecvmCV')?.value || '').trim();
+  } else if(tab === 'file'){
+    // Try extracted text from file (already in ecvmCV), or preview
+    return (document.getElementById('ecvmCV')?.value || ECVM.cv || '').trim();
+  }
+  return '';
+}
+
+// ── Run Analysis ─────────────────────────────────────────────
+async function ecvmRunAnalysis(){
+  const jd = (document.getElementById('ecvmJD')?.value || '').trim();
+  const company = (document.getElementById('ecvmCompany')?.value || '').trim();
+  const cv = ecvmGetCVText();
+  const statusEl = document.getElementById('ecvmAnalyzeStatus');
+
+  if(jd.length < 80){ statusEl.textContent = '⚠️ Please paste a complete Job Description.'; return; }
+  if(cv.length < 80){ statusEl.textContent = '⚠️ Please provide your CV text (paste, import file, or select saved CV).'; return; }
+  if(!lsGet('jt2_groq_key')){ statusEl.textContent = '⚠️ Add your free Groq API key in Settings → AI Tools.'; return; }
+
+  ECVM.jd=jd; ECVM.cv=cv; ECVM.company=company;
+  statusEl.textContent='';
+  ecvmGoStep(2);
+
+  try{
+    ecvmSetProgress(10,'Extracting job requirements...');
+    const phase1Sys=`You are an expert CV/ATS analyst. Extract structured requirements from a job description.
+Return ONLY valid JSON, no markdown:
+{"role":"job title","mustHaveSkills":["s1","s2"],"niceToHaveSkills":["s1"],"softSkills":["s1"],"tools":["t1"],"certifications":["c1"],"experienceYears":5,"educationRequired":"B.E. Mechanical","keywords":["kw1"],"industry":"Automotive","seniorityLevel":"Senior"}`;
+
+    const jdAnalysis=JSON.parse((await callAI(phase1Sys,'Job Description:\n'+jd.slice(0,3000))).replace(/```json|```/g,'').trim());
+    ecvmSetProgress(38,'Comparing your CV against job requirements...');
+
+    const phase2Sys=`You are an expert CV analyst and ATS specialist. Compare the CV against the extracted JD requirements.
+Return ONLY valid JSON, no markdown:
+{"matchedSkills":[],"missingSkills":[],"weakAreas":[],"matchedKeywords":[],"missingKeywords":[],"experienceMatch":true,"educationMatch":true,"scores":{"technicalSkills":72,"keywords":60,"experience":80,"education":90,"softSkills":65},"atsIssues":[],"atsTips":[],"overallScore":71,"strengthSummary":"...","gapSummary":"..."}`;
+
+    const comparison=JSON.parse((await callAI(phase2Sys,'JD Requirements:\n'+JSON.stringify(jdAnalysis)+'\n\nCV Text:\n'+cv.slice(0,3000))).replace(/```json|```/g,'').trim());
+    ecvmSetProgress(65,'Generating priority recommendations...');
+
+    const phase3Sys=`You are a career coach for automotive engineering. Write 4-5 specific, actionable recommendations to improve interview shortlisting. Return ONLY JSON array: [{"priority":1,"title":"...","detail":"..."}]`;
+    const recommendations=JSON.parse((await callAI(phase3Sys,'Role: '+(jdAnalysis.role||'')+'\nMissing: '+(comparison.missingSkills||[]).join(', ')+'\nWeak: '+(comparison.weakAreas||[]).join(', ')+'\nATS Issues: '+(comparison.atsIssues||[]).join(', '))).replace(/```json|```/g,'').trim());
+
+    ecvmSetProgress(95,'Preparing results...');
+    ECVM.analysis={jdAnalysis,comparison,recommendations,company};
+    ECVM.score=comparison.overallScore||0;
+    await new Promise(r=>setTimeout(r,300));
+    ecvmRenderScore();
+    ecvmGoStep(3);
+
+  } catch(e){
+    ecvmGoStep(1);
+    document.getElementById('ecvmAnalyzeStatus').textContent='❌ '+(e.message||'Analysis failed. Please try again.');
+  }
+}
+
+// ── Render Score Panel ───────────────────────────────────────
+function ecvmRenderScore(){
+  const {jdAnalysis,comparison,recommendations,company}=ECVM.analysis;
+  const score=ECVM.score;
+
+  // Arc animation (r=56, circumference=351.86)
+  const arc=document.getElementById('ecvmScoreArc');
+  if(arc){
+    const offset=351.86-(351.86*score/100);
+    arc.style.stroke=score>=75?'var(--gold)':score>=50?'var(--orange2)':'var(--red2)';
+    setTimeout(()=>arc.style.strokeDashoffset=offset,100);
+  }
+  // Count-up
+  const numEl=document.getElementById('ecvmScoreNum');
+  if(numEl){ let c=0; const iv=setInterval(()=>{c=Math.min(c+Math.ceil(score/25),score);numEl.textContent=c;if(c>=score)clearInterval(iv);},40); }
+
+  const labelEl=document.getElementById('ecvmScoreLabel');
+  if(labelEl) labelEl.textContent=score>=85?'🟢 Excellent Match':score>=70?'🟡 Good Match':score>=50?'🟠 Moderate Match':'🔴 Low Match';
+
+  const titleEl=document.getElementById('ecvmRoleTitle');
+  if(titleEl) titleEl.textContent=(company?company+' — ':'')+( jdAnalysis.role||'Match Analysis');
+
+  const sumEl=document.getElementById('ecvmScoreSummary');
+  if(sumEl) sumEl.innerHTML='<strong style="color:var(--gold2)">Strengths:</strong> '+(comparison.strengthSummary||'')+'<br><strong style="color:var(--red2)">Gaps:</strong> '+(comparison.gapSummary||'');
+
+  const miniEl=document.getElementById('ecvmMiniStats');
+  if(miniEl) miniEl.innerHTML=[
+    {num:(comparison.matchedSkills||[]).length,label:'Matched',color:'var(--green2)'},
+    {num:(comparison.missingSkills||[]).length,label:'Missing',color:'var(--red2)'},
+    {num:(comparison.weakAreas||[]).length,label:'Weak Areas',color:'var(--orange2)'}
+  ].map(s=>`<div class="cvm-mini-stat"><div class="cvm-mini-num" style="color:${s.color}">${s.num}</div><div class="cvm-mini-label">${s.label}</div></div>`).join('');
+
+  // Dimension bars
+  const dims=[{name:'Technical Skills',key:'technicalSkills'},{name:'Keywords & ATS',key:'keywords'},{name:'Experience',key:'experience'},{name:'Education',key:'education'},{name:'Soft Skills',key:'softSkills'}];
+  const dimEl=document.getElementById('ecvmDimScores');
+  if(dimEl) dimEl.innerHTML=dims.map(d=>{
+    const v=comparison.scores?.[d.key]??50;
+    const col=v>=75?'var(--green2)':v>=50?'var(--orange2)':'var(--red2)';
+    return `<div class="cvm-dim"><div class="cvm-dim-head"><span class="cvm-dim-name">${d.name}</span><span class="cvm-dim-val" style="color:${col}">${v}%</span></div><div class="cvm-dim-bar"><div class="cvm-dim-fill" id="edimFill_${d.key}" style="width:0%"></div></div></div>`;
+  }).join('');
+  setTimeout(()=>dims.forEach(d=>{const el=document.getElementById('edimFill_'+d.key);if(el)el.style.width=(comparison.scores?.[d.key]??50)+'%';}),150);
+
+  function renderChips(id,items,cls,empty){
+    const el=document.getElementById(id);if(!el)return;
+    el.innerHTML=(items&&items.length)?items.map(s=>`<span class="cvm-chip ${cls}">${s}</span>`).join(''):`<span style="font-size:12px;color:var(--text3);font-style:italic">${empty}</span>`;
+  }
+  renderChips('ecvmMatches',comparison.matchedSkills,'cvm-chip-match','None detected');
+  renderChips('ecvmMissing',comparison.missingSkills,'cvm-chip-miss','No critical gaps!');
+  renderChips('ecvmWeak',comparison.weakAreas,'cvm-chip-weak','None detected');
+
+  document.getElementById('ecvmMatchCount').textContent=(comparison.matchedSkills||[]).length+' found';
+  document.getElementById('ecvmMissingCount').textContent=(comparison.missingSkills||[]).length+' missing';
+  document.getElementById('ecvmWeakCount').textContent=(comparison.weakAreas||[]).length+' areas';
+
+  const atsEl=document.getElementById('ecvmATS');
+  if(atsEl){
+    const issues=comparison.atsIssues||[];
+    const tips=comparison.atsTips||[];
+    atsEl.innerHTML=(issues.length?issues.map(i=>`<div style="margin-bottom:5px">⚠️ ${i}</div>`).join(''):'')+(tips.length?tips.map(t=>`<div style="margin-bottom:5px">✅ ${t}</div>`).join(''):'<div style="color:var(--green2)">✅ Good ATS compatibility</div>');
+  }
+
+  const recEl=document.getElementById('ecvmRecommendations');
+  if(recEl&&recommendations&&recommendations.length){
+    recEl.innerHTML=recommendations.map((r,i)=>`<div class="cvm-rec"><div class="cvm-rec-priority cvm-rec-p${Math.min(r.priority||i+1,3)}">${r.priority||i+1}</div><div class="cvm-rec-body"><div class="cvm-rec-title">${r.title||''}</div><div class="cvm-rec-detail">${r.detail||''}</div></div></div>`).join('');
+  }
+}
+
+// ── Run Optimize ─────────────────────────────────────────────
+async function ecvmRunOptimize(){
+  if(!ECVM.analysis){alert('Run analysis first.');return;}
+  const btn=document.getElementById('ecvmOptimizeBtn');
+  btn.disabled=true;btn.innerHTML='<span class="spinner"></span> Optimizing...';
+  ecvmGoStep(2);
+  ecvmSetProgress(10,'Starting CV optimization...');
+
+  try{
+    const{jdAnalysis,comparison}=ECVM.analysis;
+    ecvmSetProgress(30,'Rewriting professional summary and skills section...');
+
+    const optimizeSys=`You are a professional CV writer and ATS optimization expert for automotive engineering roles.
+Rewrite the CV to better match the JD. STRICT RULES:
+1. Keep ALL real facts, dates, companies — never fabricate anything
+2. Naturally integrate missing JD keywords where genuinely applicable
+3. Improve bullet points to be impact-focused with metrics where possible
+4. Rewrite professional summary to align with the role
+5. Reorder skills to prioritize JD-relevant ones first
+6. Remove filler phrases, strengthen weak language
+7. Ensure ATS-friendly formatting: plain text, standard section headers
+8. Return COMPLETE optimized CV text, then ---CHANGES--- then JSON array:
+[{"section":"...","change":"...","reason":"..."}]`;
+
+    const userMsg='JD Requirements:\n'+JSON.stringify(jdAnalysis)+'\n\nMissing skills to integrate: '+(comparison.missingSkills||[]).join(', ')+'\nWeak areas to strengthen: '+(comparison.weakAreas||[]).join(', ')+'\n\nMY CV:\n'+ECVM.cv.slice(0,3500);
+
+    ecvmSetProgress(55,'AI rewriting sections...');
+    const rawResult=await callAILong(optimizeSys,userMsg);
+    ecvmSetProgress(85,'Parsing optimized CV...');
+
+    const parts=rawResult.split(/---CHANGES---/i);
+    const optimizedText=parts[0].trim();
+    let changelog=[];
+    if(parts[1]){
+      try{changelog=JSON.parse(parts[1].replace(/```json|```/g,'').trim());}
+      catch(e){changelog=[{section:'Full CV',change:'AI optimization applied',reason:'Improved keyword alignment and ATS compatibility'}];}
+    }
+
+    ECVM.optimized={text:optimizedText,changelog};
+    const scoreBoost=Math.min((comparison.missingSkills||[]).length*4,25);
+    const newScore=Math.min(ECVM.score+scoreBoost,97);
+
+    ecvmSetProgress(100,'Done!');
+    await new Promise(r=>setTimeout(r,300));
+    ecvmRenderOptimized(newScore,changelog);
+    ecvmGoStep(4);
+
+    // Pre-populate save label if empty
+    const labelEl=document.getElementById('ecvmSaveLabel');
+    if(labelEl&&!labelEl.value){
+      const dateStr=new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'2-digit'});
+      labelEl.value=(ECVM.company||'JD')+' Optimized '+dateStr;
+    }
+
+  }catch(e){
+    ecvmGoStep(3);
+    alert('❌ Optimization failed: '+(e.message||'Please try again.'));
+  }
+  btn.disabled=false;btn.innerHTML='✨ Optimize My CV for This JD';
+}
+
+// ── Render Optimized Output ──────────────────────────────────
+function ecvmRenderOptimized(newScore,changelog){
+  const badge=document.getElementById('ecvmNewScoreBadge');
+  if(badge) badge.textContent=`↑ Est. Match: ~${newScore}/100`;
+
+  const sumEl=document.getElementById('ecvmOptimizeSummary');
+  if(sumEl){
+    const gain=newScore-ECVM.score;
+    sumEl.innerHTML=`✅ CV optimized! Estimated match improved from <strong>${ECVM.score}</strong> → <strong>~${newScore}/100</strong> (+${gain} pts). ${(changelog||[]).length} section(s) enhanced. You can edit the text below before saving.`;
+  }
+
+  const textEl=document.getElementById('ecvmOptimizedText');
+  if(textEl) textEl.value=ECVM.optimized.text;
+  textEl.style.height='auto';textEl.style.height=Math.min(textEl.scrollHeight,400)+'px';
+
+  const origEl=document.getElementById('ecvmOriginalCV');
+  if(origEl) origEl.textContent=ECVM.cv;
+
+  const clEl=document.getElementById('ecvmChangelog');
+  if(clEl&&changelog&&changelog.length){
+    clEl.innerHTML=changelog.map((c,i)=>`<div class="cvm-rec"><div class="cvm-rec-priority cvm-rec-p${i<2?'1':i<4?'2':'3'}">${i+1}</div><div class="cvm-rec-body"><div class="cvm-rec-title">${c.section||'Section '+(i+1)}</div><div class="cvm-rec-detail"><strong>Change:</strong> ${c.change||''} ${c.reason?'<br><strong>Why:</strong> '+c.reason:''}</div></div></div>`).join('');
+  }
+
+  ecvmToggleView('opt');
+  ECVM.score_new = newScore;
+}
+
+function ecvmToggleView(which){
+  const opt=document.getElementById('ecvmOptimizedCV');
+  const orig=document.getElementById('ecvmOriginalCV');
+  const optBtn=document.getElementById('ecvmShowOptBtn');
+  const origBtn=document.getElementById('ecvmShowOrigBtn');
+  if(which==='opt'){
+    opt.style.display='block';orig.style.display='none';
+    optBtn.style.cssText='background:linear-gradient(135deg,var(--gold),var(--gold2));color:#080b12;border:none;padding:5px 12px;border-radius:10px;font-size:11px;font-weight:600;cursor:pointer;';
+    origBtn.style.cssText='background:var(--surface3);color:var(--text2);border:1px solid var(--border2);padding:5px 12px;border-radius:10px;font-size:11px;font-weight:600;cursor:pointer;';
+  }else{
+    opt.style.display='none';orig.style.display='block';
+    origBtn.style.cssText='background:linear-gradient(135deg,var(--gold),var(--gold2));color:#080b12;border:none;padding:5px 12px;border-radius:10px;font-size:11px;font-weight:600;cursor:pointer;';
+    optBtn.style.cssText='background:var(--surface3);color:var(--text2);border:1px solid var(--border2);padding:5px 12px;border-radius:10px;font-size:11px;font-weight:600;cursor:pointer;';
+  }
+}
+
+// ── Save Optimized CV to My CV Tab ───────────────────────────
+function ecvmSaveToMyCVTab(){
+  if(!ECVM.optimized){alert('No optimized CV yet. Run optimization first.');return;}
+  const label=(document.getElementById('ecvmSaveLabel')?.value||'').trim()||'Optimized CV';
+  const textEl=document.getElementById('ecvmOptimizedText');
+  const optimizedText=textEl?textEl.value.trim():ECVM.optimized.text;
+
+  if(!optimizedText){alert('Optimized CV text is empty.');return;}
+
+  // Store the plain text in jt2_cv_text for future use
+  lsSet('jt2_cv_text', optimizedText);
+
+  // Convert optimized text to base64 (as plain text file)
+  const base64Text=btoa(unescape(encodeURIComponent(optimizedText)));
+  const fileName=label.replace(/[^a-z0-9\s\-_]/gi,'_').replace(/\s+/g,'_')+'.txt';
+
+  // Create new CV version entry
+  const newVersion={
+    id:uid(),name:fileName,label,
+    data:base64Text,
+    isDefault:false,
+    added:new Date().toISOString(),
+    fromOptimizer:true,
+    originalScore:ECVM.score,
+    optimizedScore:ECVM.score_new||ECVM.score+10
+  };
+
+  cvVersions.push(newVersion);
+  LS.set('jt2_cvversions',cvVersions);
+  ECVM.savedCVId=newVersion.id;
+
+  // Refresh My CV tab rendering and email selector
+  renderCVVersions();
+  updateCVSelector();
+  // Auto-select the new version in email
+  const emailSel=document.getElementById('emailCVSelect');
+  if(emailSel) emailSel.value=newVersion.id;
+
+  // Status
+  const saveStatusEl=document.getElementById('ecvmSaveStatus');
+  if(saveStatusEl){
+    saveStatusEl.textContent='✅ Saved as "'+label+'" in My CV tab!';
+    setTimeout(()=>saveStatusEl.textContent='',4000);
+  }
+
+  return newVersion.id;
+}
+
+// ── Save & go to email ────────────────────────────────────────
+function ecvmSaveAndSend(){
+  const savedId=ecvmSaveToMyCVTab();
+  if(!savedId){return;}
+
+  // Show banner on email page
+  const bannerText=document.getElementById('cvMatchBannerText');
+  const banner=document.getElementById('cvMatchBanner');
+  const label=document.getElementById('ecvmSaveLabel')?.value||'Optimized CV';
+  if(bannerText) bannerText.textContent=`"${label}" saved and selected. Ready to attach to your email.`;
+  if(banner) banner.style.display='flex';
+
+  // Select optimized CV in email selector
+  const emailSel=document.getElementById('emailCVSelect');
+  if(emailSel&&savedId) emailSel.value=savedId;
+
+  emailCloseCVMatch();
+}
+
+function emailClearCVMatch(){
+  document.getElementById('cvMatchBanner').style.display='none';
+}
+
+// ── Copy / Download ──────────────────────────────────────────
+function ecvmCopyOptimized(){
+  const textEl=document.getElementById('ecvmOptimizedText');
+  const text=textEl?textEl.value:ECVM.optimized?.text||'';
+  if(!text){alert('No optimized CV to copy.');return;}
+  navigator.clipboard.writeText(text).then(()=>alert('✅ Optimized CV copied!')).catch(()=>alert('Copy failed — select text manually.'));
+}
+
+function ecvmDownloadOptimized(){
+  const textEl=document.getElementById('ecvmOptimizedText');
+  const text=textEl?textEl.value:ECVM.optimized?.text||'';
+  if(!text){alert('No optimized CV to download.');return;}
+  const blob=new Blob([text],{type:'text/plain;charset=utf-8'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='CV_Optimized_'+new Date().toISOString().split('T')[0]+'.txt';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+
+// ============================================================
+// JD–CV MATCH & OPTIMIZE — Full Engine
+// ============================================================
+
+// ── State ──────────────────────────────────────────────────
+const CVM = {
+  jd: '', cv: '', company: '',
+  analysis: null, optimized: null,
+  score: 0, currentStep: 1
+};
+
+// ── Step Navigation ─────────────────────────────────────────
+function cvmGoStep(n){
+  for(let i=1;i<=4;i++){
+    const step = document.getElementById('cvmStep'+i);
+    const panel = document.getElementById('cvmPanel'+i);
+    const line  = document.getElementById('cvmLine'+i);
+    if(step){ step.classList.remove('active','done'); if(i<n) step.classList.add('done'); else if(i===n) step.classList.add('active'); }
+    if(panel){ panel.style.display = i===n ? 'block' : 'none'; }
+    if(line && i<4){ line.classList.toggle('done', i<n); }
+  }
+  CVM.currentStep = n;
+}
+
+// ── Clear All ───────────────────────────────────────────────
+function cvmClearAll(){
+  document.getElementById('cvmJD').value = '';
+  document.getElementById('cvmCV').value = '';
+  document.getElementById('cvmCompany').value = '';
+  document.getElementById('cvmAnalyzeStatus').textContent = '';
+  CVM.analysis = null; CVM.optimized = null; CVM.score = 0;
+  cvmGoStep(1);
+}
+
+// ── Load saved CV from My CV tab ────────────────────────────
+function cvmLoadSavedCV(){
+  const saved = lsGet('jt2_cv_text');
+  if(saved){
+    document.getElementById('cvmCV').value = saved;
+    document.getElementById('cvmAnalyzeStatus').textContent = '✅ Saved CV loaded';
+    setTimeout(()=>document.getElementById('cvmAnalyzeStatus').textContent='', 2500);
+  } else {
+    document.getElementById('cvmAnalyzeStatus').textContent = '⚠️ No saved CV text found. Paste it below or save one in My CV tab.';
+  }
+}
+
+// ── Progress animation helper ────────────────────────────────
+function cvmSetProgress(pct, msg){
+  const bar = document.getElementById('cvmProgressBar');
+  const pctEl = document.getElementById('cvmProgressPct');
+  const msgEl = document.getElementById('cvmLoadingMsg');
+  if(bar) bar.style.width = pct + '%';
+  if(pctEl) pctEl.textContent = pct + '%';
+  if(msgEl && msg) msgEl.textContent = msg;
+}
+
+// ── Main Analysis Runner ─────────────────────────────────────
+async function cvmRunAnalysis(){
+  const jd = document.getElementById('cvmJD').value.trim();
+  const cv = document.getElementById('cvmCV').value.trim();
+  const company = document.getElementById('cvmCompany').value.trim();
+  const statusEl = document.getElementById('cvmAnalyzeStatus');
+
+  if(jd.length < 80){
+    statusEl.textContent = '⚠️ Please paste a complete Job Description (at least a few sentences).';
+    return;
+  }
+  if(cv.length < 80){
+    statusEl.textContent = '⚠️ Please paste your CV text (at least a few lines).';
+    return;
+  }
+  if(!lsGet('jt2_groq_key')){
+    statusEl.textContent = '⚠️ Please add your free Groq API key in Settings → AI Tools first.';
+    return;
+  }
+
+  CVM.jd = jd; CVM.cv = cv; CVM.company = company;
+  statusEl.textContent = '';
+
+  cvmGoStep(2);
+  cvmSetProgress(5, 'Preparing analysis...');
+
+  try {
+    // ── PHASE 1: Extract JD requirements ──────────────────────
+    cvmSetProgress(15, 'Extracting required skills, keywords, and qualifications from JD...');
+
+    const phase1Sys = `You are an expert CV / ATS analyst. Extract structured requirements from a job description.
+Return ONLY valid JSON, no markdown, no explanation:
+{
+  "role": "job title",
+  "mustHaveSkills": ["skill1","skill2",...],
+  "niceToHaveSkills": ["skill1",...],
+  "softSkills": ["skill1",...],
+  "tools": ["tool1",...],
+  "certifications": ["cert1",...],
+  "experienceYears": 5,
+  "educationRequired": "B.E. Mechanical",
+  "keywords": ["keyword1",...],
+  "industry": "Automotive",
+  "seniorityLevel": "Senior"
+}`;
+
+    const jdAnalysis = JSON.parse(
+      (await callAI(phase1Sys, 'Job Description:\n' + jd.slice(0, 3000)))
+        .replace(/```json|```/g,'').trim()
+    );
+
+    cvmSetProgress(35, 'Comparing your CV against job requirements...');
+
+    // ── PHASE 2: Compare CV against JD ────────────────────────
+    const phase2Sys = `You are an expert CV analyst and ATS specialist. Compare the CV against the extracted JD requirements.
+Return ONLY valid JSON, no markdown:
+{
+  "matchedSkills": ["skill1",...],
+  "missingSkills": ["skill1",...],
+  "weakAreas": ["area1",...],
+  "matchedKeywords": ["kw1",...],
+  "missingKeywords": ["kw1",...],
+  "experienceMatch": true,
+  "educationMatch": true,
+  "scores": {
+    "technicalSkills": 72,
+    "keywords": 60,
+    "experience": 80,
+    "education": 90,
+    "softSkills": 65
+  },
+  "atsIssues": ["issue1",...],
+  "atsTips": ["tip1",...],
+  "overallScore": 71,
+  "strengthSummary": "2-sentence summary of what the candidate does well",
+  "gapSummary": "2-sentence summary of the most critical gaps"
+}`;
+
+    const comparison = JSON.parse(
+      (await callAI(phase2Sys,
+        'JD Requirements:\n' + JSON.stringify(jdAnalysis) +
+        '\n\nCV Text:\n' + cv.slice(0, 3000)))
+        .replace(/```json|```/g,'').trim()
+    );
+
+    cvmSetProgress(65, 'Generating priority recommendations...');
+
+    // ── PHASE 3: Priority recommendations ─────────────────────
+    const phase3Sys = `You are a career coach specialising in automotive engineering roles.
+Based on the gap analysis, write 4–5 specific, actionable recommendations to improve interview shortlisting chances.
+Return ONLY valid JSON array:
+[
+  {"priority":1,"title":"short action title","detail":"specific 1-2 sentence explanation with examples"},
+  ...
+]
+Priority 1 = most critical. Be specific to the automotive domain.`;
+
+    const recommendations = JSON.parse(
+      (await callAI(phase3Sys,
+        'Role: ' + (jdAnalysis.role||'') +
+        '\nMissing: ' + (comparison.missingSkills||[]).join(', ') +
+        '\nWeak: ' + (comparison.weakAreas||[]).join(', ') +
+        '\nATS Issues: ' + (comparison.atsIssues||[]).join(', ')))
+        .replace(/```json|```/g,'').trim()
+    );
+
+    cvmSetProgress(90, 'Finalising results...');
+
+    CVM.analysis = { jdAnalysis, comparison, recommendations, company };
+    CVM.score = comparison.overallScore || 0;
+
+    cvmSetProgress(100, 'Done!');
+    await new Promise(r => setTimeout(r, 400));
+
+    cvmRenderScore();
+    cvmGoStep(3);
+
+  } catch(e) {
+    cvmGoStep(1);
+    document.getElementById('cvmAnalyzeStatus').textContent =
+      '❌ ' + (e.message || 'Analysis failed. Please try again.');
+  }
+}
+
+// ── Render Score Panel ──────────────────────────────────────
+function cvmRenderScore(){
+  const { jdAnalysis, comparison, recommendations, company } = CVM.analysis;
+  const score = CVM.score;
+
+  // Score arc animation (circumference = 2π×60 ≈ 376.99)
+  const arc = document.getElementById('cvmScoreArc');
+  if(arc){
+    const offset = 376.99 - (376.99 * score / 100);
+    setTimeout(()=>{ arc.style.strokeDashoffset = offset; }, 120);
+    // Dynamic color based on score
+    arc.style.stroke = score >= 75 ? 'url(#cvmScoreGrad)' :
+                       score >= 50 ? 'var(--orange2)' : 'var(--red2)';
+  }
+
+  // Score number count-up
+  const numEl = document.getElementById('cvmScoreNum');
+  if(numEl){
+    let curr = 0;
+    const step = Math.ceil(score / 28);
+    const iv = setInterval(()=>{ curr = Math.min(curr+step, score); numEl.textContent=curr; if(curr>=score) clearInterval(iv); }, 45);
+  }
+
+  // Score label
+  const labelEl = document.getElementById('cvmScoreLabel');
+  const titleEl = document.getElementById('cvmRoleTitle');
+  if(labelEl) labelEl.textContent =
+    score >= 85 ? '🟢 Excellent Match' :
+    score >= 70 ? '🟡 Good Match' :
+    score >= 50 ? '🟠 Moderate Match' : '🔴 Low Match';
+  if(titleEl) titleEl.textContent =
+    (company ? company + ' — ' : '') + (jdAnalysis.role || 'Match Analysis');
+
+  // Summary
+  const sumEl = document.getElementById('cvmScoreSummary');
+  if(sumEl){
+    sumEl.innerHTML =
+      '<strong style="color:var(--gold2)">Strengths:</strong> ' + (comparison.strengthSummary||'') +
+      '<br><strong style="color:var(--red2)">Gaps:</strong> ' + (comparison.gapSummary||'');
+  }
+
+  // Mini stats
+  const miniEl = document.getElementById('cvmMiniStats');
+  if(miniEl) miniEl.innerHTML = [
+    { num: (comparison.matchedSkills||[]).length, label: 'Matched Skills', color: 'var(--green2)' },
+    { num: (comparison.missingSkills||[]).length, label: 'Missing Skills', color: 'var(--red2)' },
+    { num: (comparison.weakAreas||[]).length,     label: 'Weak Areas',    color: 'var(--orange2)' }
+  ].map(s => `
+    <div class="cvm-mini-stat">
+      <div class="cvm-mini-num" style="color:${s.color}">${s.num}</div>
+      <div class="cvm-mini-label">${s.label}</div>
+    </div>`).join('');
+
+  // Dimension score bars
+  const dims = [
+    { name: 'Technical Skills',  key: 'technicalSkills' },
+    { name: 'Keywords & ATS',    key: 'keywords' },
+    { name: 'Experience Level',  key: 'experience' },
+    { name: 'Education Match',   key: 'education' },
+    { name: 'Soft Skills',       key: 'softSkills' }
+  ];
+  const dimEl = document.getElementById('cvmDimScores');
+  if(dimEl) dimEl.innerHTML = dims.map(d => {
+    const v = comparison.scores?.[d.key] ?? 50;
+    const col = v>=75?'var(--green2)':v>=50?'var(--orange2)':'var(--red2)';
+    return `<div class="cvm-dim">
+      <div class="cvm-dim-head">
+        <span class="cvm-dim-name">${d.name}</span>
+        <span class="cvm-dim-val" style="color:${col}">${v}%</span>
+      </div>
+      <div class="cvm-dim-bar"><div class="cvm-dim-fill" id="dimFill_${d.key}" style="width:0%;background:linear-gradient(90deg,${col},${col}88)"></div></div>
+    </div>`;
+  }).join('');
+  setTimeout(()=>{
+    dims.forEach(d=>{
+      const el = document.getElementById('dimFill_'+d.key);
+      if(el) el.style.width = (comparison.scores?.[d.key]??50)+'%';
+    });
+  }, 200);
+
+  // Skill chips
+  function renderChips(containerId, items, chipClass, emptyMsg){
+    const el = document.getElementById(containerId);
+    if(!el)return;
+    el.innerHTML = (items&&items.length)
+      ? items.map(s=>`<span class="cvm-chip ${chipClass}">${s}</span>`).join('')
+      : `<span style="font-size:12px;color:var(--text3);font-style:italic">${emptyMsg}</span>`;
+  }
+  renderChips('cvmMatches', comparison.matchedSkills, 'cvm-chip-match', 'None detected');
+  renderChips('cvmMissing',  comparison.missingSkills, 'cvm-chip-miss',  'No critical gaps — great!');
+  renderChips('cvmWeak',     comparison.weakAreas,     'cvm-chip-weak',  'No weak areas detected');
+
+  // Update counts
+  document.getElementById('cvmMatchCount').textContent   = (comparison.matchedSkills||[]).length + ' found';
+  document.getElementById('cvmMissingCount').textContent = (comparison.missingSkills||[]).length + ' missing';
+  document.getElementById('cvmWeakCount').textContent    = (comparison.weakAreas||[]).length + ' areas';
+
+  // ATS insights
+  const atsEl = document.getElementById('cvmATS');
+  if(atsEl){
+    const issues = comparison.atsIssues || [];
+    const tips   = comparison.atsTips   || [];
+    atsEl.innerHTML =
+      (issues.length ? '<div style="margin-bottom:10px">' + issues.map(i=>`<div style="margin-bottom:5px">⚠️ ${i}</div>`).join('') + '</div>' : '') +
+      (tips.length   ? tips.map(t=>`<div style="margin-bottom:5px">✅ ${t}</div>`).join('') : '<div style="color:var(--green2)">✅ Good ATS compatibility detected</div>');
+  }
+
+  // Recommendations
+  const recEl = document.getElementById('cvmRecommendations');
+  if(recEl && recommendations && recommendations.length){
+    recEl.innerHTML = recommendations.map((r,i)=>`
+      <div class="cvm-rec">
+        <div class="cvm-rec-priority cvm-rec-p${Math.min(r.priority||i+1,3)}">${r.priority||i+1}</div>
+        <div class="cvm-rec-body">
+          <div class="cvm-rec-title">${r.title||''}</div>
+          <div class="cvm-rec-detail">${r.detail||''}</div>
+        </div>
+      </div>`).join('');
+  }
+}
+
+// ── Copy full analysis ──────────────────────────────────────
+function cvmCopyAnalysis(){
+  if(!CVM.analysis){ alert('Run analysis first.'); return; }
+  const { comparison, recommendations } = CVM.analysis;
+  const text = [
+    `JD–CV MATCH ANALYSIS — Score: ${CVM.score}/100`,
+    `\n✅ MATCHING SKILLS (${(comparison.matchedSkills||[]).length}):\n` + (comparison.matchedSkills||[]).join(', '),
+    `\n❌ MISSING SKILLS (${(comparison.missingSkills||[]).length}):\n` + (comparison.missingSkills||[]).join(', '),
+    `\n⚠️ WEAK AREAS:\n` + (comparison.weakAreas||[]).join(', '),
+    `\n🤖 ATS ISSUES:\n` + (comparison.atsIssues||[]).join('\n'),
+    `\n💡 RECOMMENDATIONS:\n` + (recommendations||[]).map((r,i)=>`${i+1}. ${r.title}: ${r.detail}`).join('\n'),
+  ].join('\n');
+  navigator.clipboard.writeText(text).then(()=>alert('✅ Analysis copied to clipboard!')).catch(()=>alert('Copy failed'));
+}
+
+// ── CV Optimizer ────────────────────────────────────────────
+async function cvmRunOptimize(){
+  if(!CVM.analysis){ alert('Run analysis first.'); return; }
+  const btn = document.getElementById('cvmOptimizeBtn');
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Optimizing...';
+
+  cvmGoStep(2);
+  cvmSetProgress(10, 'Starting CV optimization...');
+
+  try {
+    const { jdAnalysis, comparison } = CVM.analysis;
+
+    cvmSetProgress(25, 'Rewriting professional summary for better ATS alignment...');
+
+    const optimizeSys = `You are a professional CV writer and ATS optimization expert specialising in automotive engineering.
+Your task: rewrite the user's CV to better match a specific job description.
+
+STRICT RULES:
+1. Keep ALL real experience, dates, companies, and facts — never fabricate or exaggerate
+2. Naturally integrate missing keywords from the JD where genuinely applicable
+3. Improve bullet points to be more impact-focused (use metrics where possible)
+4. Rewrite the professional summary to align with the role
+5. Reorder skills section to prioritize JD-relevant skills first
+6. Improve formatting: use consistent bullet points, clear section headers
+7. Add missing relevant skills ONLY if the person could genuinely claim them based on their experience
+8. Make every word count — remove filler phrases, weak language
+9. Ensure ATS compatibility: plain text format, standard section names
+10. Return the COMPLETE optimized CV text followed by ---CHANGES--- then a JSON array of changes:
+[{"section":"Professional Summary","change":"Rewrote to highlight ADAS focus matching JD requirement","reason":"..."}]`;
+
+    const userMsg =
+      `JD REQUIREMENTS:\n${JSON.stringify(jdAnalysis)}\n\n` +
+      `MISSING SKILLS TO NATURALLY INTEGRATE: ${(comparison.missingSkills||[]).join(', ')}\n` +
+      `WEAK AREAS TO STRENGTHEN: ${(comparison.weakAreas||[]).join(', ')}\n` +
+      `MATCHED KEYWORDS (already good): ${(comparison.matchedKeywords||[]).join(', ')}\n\n` +
+      `MY CV:\n${CVM.cv.slice(0, 3500)}`;
+
+    cvmSetProgress(50, 'AI is rewriting sections — professional summary, skills, experience bullets...');
+
+    const rawResult = await callAILong(optimizeSys, userMsg);
+
+    cvmSetProgress(80, 'Parsing optimized CV and change log...');
+
+    // Split at ---CHANGES---
+    const parts = rawResult.split(/---CHANGES---/i);
+    const optimizedText = parts[0].trim();
+    let changelog = [];
+    if(parts[1]){
+      try{ changelog = JSON.parse(parts[1].replace(/```json|```/g,'').trim()); }
+      catch(e){ changelog = [{section:'Full CV', change:'AI optimization applied', reason:'Improved ATS alignment and keyword matching'}]; }
+    }
+
+    CVM.optimized = { text: optimizedText, changelog };
+
+    // Estimate new score (simple heuristic boost)
+    const missingCount = (comparison.missingSkills||[]).length;
+    const scoreBoost = Math.min(missingCount * 4, 25);
+    const newScore = Math.min(CVM.score + scoreBoost, 97);
+
+    cvmSetProgress(100, 'Done!');
+    await new Promise(r => setTimeout(r, 300));
+
+    cvmRenderOptimized(newScore, changelog);
+    cvmGoStep(4);
+
+  } catch(e) {
+    cvmGoStep(3);
+    alert('❌ Optimization failed: ' + (e.message || 'Please try again.'));
+  }
+
+  btn.disabled = false; btn.innerHTML = '✨ Optimize My CV for This JD';
+}
+
+// ── callAI with larger token limit for optimization ──────────
+async function callAILong(systemPrompt, userContent){
+  const apiKey = getGroqKey();
+  const body = {
+    model: 'llama-3.1-8b-instant',
+    max_tokens: 4000,
+    temperature: 0.25,
+    messages: [
+      { role: 'system', content: systemPrompt },
+      { role: 'user',   content: userContent }
+    ]
+  };
+  const resp = await fetch(GROQ_API, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
+    body: JSON.stringify(body)
+  });
+  if(!resp.ok){
+    const err = await resp.json().catch(()=>({error:{message:resp.statusText}}));
+    throw new Error('Groq error ' + resp.status + ': ' + (err.error?.message||resp.statusText));
+  }
+  const data = await resp.json();
+  return data.choices?.[0]?.message?.content || '';
+}
+
+// ── Render Optimized CV ─────────────────────────────────────
+function cvmRenderOptimized(newScore, changelog){
+  // Score badge
+  const badge = document.getElementById('cvmNewScoreBadge');
+  if(badge) badge.textContent = `↑ Est. Match: ~${newScore}/100`;
+
+  // Summary alert
+  const sumEl = document.getElementById('cvmOptimizeSummary');
+  if(sumEl){
+    const gain = newScore - CVM.score;
+    sumEl.innerHTML = `✅ CV optimized! Estimated match score improved from <strong>${CVM.score}</strong> → <strong>~${newScore}/100</strong> (+${gain} pts). ${(changelog||[]).length} sections enhanced. Review carefully before using — all real facts are preserved.`;
+  }
+
+  // Optimized text
+  const optEl = document.getElementById('cvmOptimizedCV');
+  if(optEl) optEl.textContent = CVM.optimized.text;
+
+  // Original text (for comparison)
+  const origEl = document.getElementById('cvmOriginalCV');
+  if(origEl) origEl.textContent = CVM.cv;
+
+  // Changelog
+  const clEl = document.getElementById('cvmChangelog');
+  if(clEl && changelog && changelog.length){
+    clEl.innerHTML = changelog.map((c,i)=>`
+      <div class="cvm-rec">
+        <div class="cvm-rec-priority cvm-rec-p${i<2?'1':i<4?'2':'3'}">${i+1}</div>
+        <div class="cvm-rec-body">
+          <div class="cvm-rec-title">${c.section||'Section '+(i+1)}</div>
+          <div class="cvm-rec-detail"><strong>Change:</strong> ${c.change||''} ${c.reason?'<br><strong>Why:</strong> '+c.reason:''}</div>
+        </div>
+      </div>`).join('');
+  }
+
+  cvmToggleView('opt');
+}
+
+// ── Toggle original/optimized view ──────────────────────────
+function cvmToggleView(which){
+  const opt  = document.getElementById('cvmOptimizedCV');
+  const orig = document.getElementById('cvmOriginalCV');
+  const optBtn  = document.getElementById('cvmShowOptBtn');
+  const origBtn = document.getElementById('cvmShowOrigBtn');
+  if(which==='opt'){
+    opt.style.display='block'; orig.style.display='none';
+    optBtn.style.cssText='background:linear-gradient(135deg,var(--gold),var(--gold2));color:#080b12;border:none;';
+    origBtn.style.cssText='background:var(--surface3);color:var(--text2);border:1px solid var(--border2);';
+  } else {
+    opt.style.display='none'; orig.style.display='block';
+    origBtn.style.cssText='background:linear-gradient(135deg,var(--gold),var(--gold2));color:#080b12;border:none;';
+    optBtn.style.cssText='background:var(--surface3);color:var(--text2);border:1px solid var(--border2);';
+  }
+}
+
+// ── Copy optimized CV ────────────────────────────────────────
+function cvmCopyOptimized(){
+  if(!CVM.optimized){ alert('No optimized CV to copy.'); return; }
+  navigator.clipboard.writeText(CVM.optimized.text)
+    .then(()=>alert('✅ Optimized CV copied to clipboard! Paste into your Word document.'))
+    .catch(()=>alert('Copy failed — please select the text manually and copy it.'));
+}
+
+// ── Download optimized CV ────────────────────────────────────
+function cvmDownloadOptimized(){
+  if(!CVM.optimized){ alert('No optimized CV to download.'); return; }
+  const blob = new Blob([CVM.optimized.text], { type: 'text/plain;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'CV_Optimized_' + new Date().toISOString().split('T')[0] + '.txt';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+
+// ============================================================
 // AI TOOLS — SUB-TAB SWITCHER
 // ============================================================
 function switchAITab(name, btn){
@@ -5975,6 +7674,17 @@ function switchAITab(name, btn){
   if(panel) panel.style.display = 'block';
   if(btn) btn.classList.add('active');
 }
+
+// ── MODAL KEYBOARD HANDLER (Escape to close) ────────────────
+document.addEventListener('keydown', function(e){
+  if(e.key === 'Escape'){
+    const modal = document.getElementById('cvMatchModal');
+    if(modal && modal.style.display !== 'none'){
+      emailCloseCVMatch();
+    }
+  }
+});
+
 window.addEventListener('load',init);
 </script>
 
